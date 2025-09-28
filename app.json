@@ -1,0 +1,75 @@
+{
+  "expo": {
+    "name": "하나green세상",
+    "slug": "하나green세상",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/hana_logo.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/hana_logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.jimpark.hanagreenworld",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "친환경 가맹점을 찾기 위해 위치 정보가 필요합니다.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "친환경 가맹점을 찾기 위해 위치 정보가 필요합니다.",
+        "NSCameraUsageDescription": "에코챌린지 인증을 위해 카메라 접근이 필요합니다.",
+        "NSPhotoLibraryUsageDescription": "촬영한 사진을 갤러리에 저장하기 위해 권한이 필요합니다.",
+        "NSPhotoLibraryAddUsageDescription": "촬영한 사진을 갤러리에 저장하기 위해 권한이 필요합니다.",
+        "NSAppTransportSecurity": {
+          "NSExceptionDomains": {
+            "192.168.123.1": {
+              "NSExceptionAllowsInsecureHTTPLoads": true
+            }
+          }
+        }
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/hana_logo.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.jimpark.hanagreenworld",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/hana_logo.png"
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "친환경 가맹점을 찾기 위해 위치 정보가 필요합니다.",
+          "locationAlwaysPermission": "친환경 가맹점을 찾기 위해 위치 정보가 필요합니다.",
+          "locationWhenInUsePermission": "친환경 가맹점을 찾기 위해 위치 정보가 필요합니다."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "에코챌린지 인증을 위해 카메라 접근이 필요합니다."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "촬영한 사진을 갤러리에 저장하기 위해 권한이 필요합니다.",
+          "savePhotosPermission": "촬영한 사진을 갤러리에 저장하기 위해 권한이 필요합니다."
+        }
+      ]
+    ]
+  }
+}
