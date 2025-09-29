@@ -7,7 +7,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SCALE } from '../utils/constants';
 import { useEcoSeeds } from '../hooks/useEcoSeeds';
+import { useSavingsAccountData } from '../hooks/useSavingsAccountData';
 import { checkTodayQuizParticipation } from '../utils/ecoSeedApi';
+import { getCurrentUserIdFromToken } from '../utils/jwtUtils';
+import { integrationApi } from '../services/integrationApi';
 
 interface GreenPlayScreenProps {
   onBack?: () => void;
@@ -26,6 +29,26 @@ interface GreenPlayScreenProps {
 export const GreenPlayScreen: React.FC<GreenPlayScreenProps> = ({ onBack, onEnterGreenZone, onNavigateToHistory, onNavigateToQuiz, onNavigateToSavings, onNavigateToEcoMerchants, onNavigateToEcoChallenge, onNavigateToTeams, quizCompleted = false, ecoSeeds: propEcoSeeds, onHome }) => {
   const { ecoSeedInfo, refreshProfile } = useEcoSeeds();
   const [actualQuizCompleted, setActualQuizCompleted] = useState(quizCompleted);
+  const [currentUserId, setCurrentUserId] = useState<number>(0);
+
+  // 사용자 ID 가져오기
+  useEffect(() => {
+    const fetchUserId = async () => {
+      try {
+        const userId = await getCurrentUserIdFromToken();
+        setCurrentUserId(userId || 0);
+      } catch (error) {
+        console.error('사용자 ID 조회 실패:', error);
+        setCurrentUserId(0);
+      }
+    };
+    fetchUserId();
+  }, []);
+
+  // 적금 계좌 보유 여부 확인
+  // const { savingsAccounts } = useSavingsAccountData(currentUserId > 0 ? currentUserId : 1);
+  const [hasActiveApplication, setHasActiveApplication] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
   // 일관된 데이터 사용을 위해 ecoSeedInfo의 currentSeeds를 우선 사용
   const ecoSeeds = ecoSeedInfo?.currentSeeds ?? propEcoSeeds ?? 0;
@@ -39,6 +62,25 @@ export const GreenPlayScreen: React.FC<GreenPlayScreenProps> = ({ onBack, onEnte
     // 컴포넌트 마운트 시에도 새로고침
     handleFocus();
   }, [refreshProfile]);
+
+  useEffect(() => {
+    const checkProductOwnership = async () => {
+      try {
+        setIsLoading(true);
+        // productId 1 (하나green세상 적금) 보유 여부 직접 확인
+        const response = await integrationApi.checkProductOwnership(1);
+        setHasActiveApplication(response.hasProduct);
+      } catch (error) {
+        console.error('상품 보유 여부 확인 실패:', error);
+        // 에러 시 기본적으로 가입 가능 상태로 설정
+        setHasActiveApplication(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkProductOwnership();
+  }, []);
 
   // 컴포넌트 마운트 시 실제 퀴즈 참여 상태를 확인
   useEffect(() => {
@@ -91,14 +133,35 @@ export const GreenPlayScreen: React.FC<GreenPlayScreenProps> = ({ onBack, onEnte
              <View style={styles.savingsCard}>
                <View style={styles.savingsCardBlur}>
                  <View style={styles.savingsCardContent}>
-                   <Text style={styles.savingsCardTitle}>하나green세상 적금 가입하고{'\n'}함께 환경보호하면 금리 UP!</Text>
-                   <Text style={styles.savingsCardRate}>최저 2.0% ~ 최고 7.0% (연, 세전)</Text>
-                   <TouchableOpacity 
-                     style={styles.savingsButton} 
-                     onPress={() => { onNavigateToSavings?.(); }}
-                   >
-                     <Text style={styles.savingsButtonText}>적금 가입하기</Text>
-                   </TouchableOpacity>
+                   {hasActiveApplication ? (
+                     <View style={styles.savingsStatusContainer}>
+                       <View style={styles.savingsStatusContent}>
+                         <Image
+                           source={require('../../assets/expert.png')}
+                           style={styles.savingsStatusIcon}
+                           resizeMode="contain"
+                         />
+                         <View style={styles.hasSavingsCardContainer}>
+                          <Text style={styles.hasSavingsCardSubTitle}>친환경 적금</Text>
+                          <Text style={styles.hasSavingsCardTitle}>하나green세상 적금</Text>
+                         </View>
+                       </View>
+                       <View style={styles.savingsStatusBadge}>
+                         <Text style={styles.savingsStatusText}>보유중</Text>
+                       </View>
+                     </View>
+                   ) : (
+                     <>
+                       <Text style={styles.savingsCardTitle}>하나green세상 적금 가입하고{'\n'}함께 환경보호하면 금리 UP!</Text>
+                       <Text style={styles.savingsCardRate}>최저 3.0% ~ 최고 7.0% (연, 세전)</Text>
+                       <TouchableOpacity
+                         style={styles.savingsButton}
+                         onPress={() => { onNavigateToSavings?.(); }}
+                       >
+                         <Text style={styles.savingsButtonText}>적금 가입하기</Text>
+                       </TouchableOpacity>
+                     </>
+                   )}
                  </View>
                </View>
              </View>
@@ -277,7 +340,45 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   savingsCardContent: {
-    // alignItems: '',
+    position: 'relative',
+  },
+  hasSavingsCardContainer: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    flex: 1,
+    paddingTop: 10 * SCALE,
+  },
+  hasSavingsCardSubTitle: {
+    fontSize: 16 * SCALE,
+    fontWeight: 'bold',
+    color: '#A2ECDF',
+    marginBottom: 8 * SCALE,
+  },
+  hasSavingsCardTitle: {
+    fontSize: 22 * SCALE,
+    fontWeight: 'bold',
+    color: '#FFF',
+    marginBottom: 8 * SCALE,
+  },
+  savingsStatusContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    width: '100%',
+  },
+  savingsStatusContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  savingsStatusBadge: {
+    backgroundColor: '#19A697',
+    borderRadius: 12 * SCALE,
+    paddingHorizontal: 8 * SCALE,
+    paddingVertical: 4 * SCALE,
+    position: 'absolute',
+    top: 0,
+    right: 0,
   },
   savingsCardTitle: {
     fontSize: 20 * SCALE,
@@ -439,6 +540,17 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16 * SCALE,
     color: '#111827',
+    fontWeight: '600',
+  },
+  // Savings Status Styles
+  savingsStatusIcon: {
+    width: 80 * SCALE,
+    height: 80 * SCALE,
+    marginRight: 12 * SCALE,
+  },
+  savingsStatusText: {
+    fontSize: 14 * SCALE,
+    color: '#ffffff',
     fontWeight: '600',
   },
 }); 
