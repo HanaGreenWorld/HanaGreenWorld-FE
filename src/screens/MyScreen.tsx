@@ -357,21 +357,21 @@ export function MyScreen({
           <View style={styles.earthRateRow}>
             <Text style={styles.earthRateLabel}>기본금리</Text>
             <Text style={styles.earthRateValue}>
-                          <Text style={styles.earthRateValueNum}>{savingsAccounts[0].baseRate.toFixed(2)}</Text>
+                          <Text style={styles.earthRateValueNum}>{(savingsAccounts[0].baseRate || 0).toFixed(2)}</Text>
               <Text style={styles.earthRateValueUnit}>%</Text>
             </Text>
           </View>
           <View style={styles.earthRateRow}>
             <Text style={styles.earthRateLabel}>우대금리</Text>
             <Text style={styles.earthRateValue}>
-                          <Text style={styles.earthRateValueNum}>{savingsAccounts[0].preferentialRate.toFixed(2)}</Text>
+                          <Text style={styles.earthRateValueNum}>{(savingsAccounts[0].preferentialRate || 0).toFixed(2)}</Text>
               <Text style={styles.earthRateValueUnit}>%</Text>
             </Text>
           </View>
           <View style={styles.earthRateRow}>
             <Text style={styles.earthRateLabel}>적용금리</Text>
             <Text style={styles.earthRateValue}>
-                          <Text style={styles.earthRateValueNum}>{savingsAccounts[0].interestRate.toFixed(2)}</Text>
+                          <Text style={styles.earthRateValueNum}>{(savingsAccounts[0].interestRate || 0).toFixed(2)}</Text>
               <Text style={styles.earthRateValueUnit}>%</Text>
             </Text>
           </View>
