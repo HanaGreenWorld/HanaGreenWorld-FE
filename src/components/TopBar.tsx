@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SCALE, COLORS } from '../utils/constants';
 
 interface TopBarProps {
@@ -10,8 +11,10 @@ interface TopBarProps {
 }
 
 export default function TopBar({ title, onBack, onHome }: TopBarProps) {
+  const insets = useSafeAreaInsets();
+  
   return (
-    <View style={styles.container}>
+    <View style={[styles.container]}>
       {onBack ? (
         <TouchableOpacity onPress={onBack} style={styles.headerButton}>
           <Ionicons name="chevron-back" size={24 * SCALE} color={COLORS.text} />
@@ -38,7 +41,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20 * SCALE,
-    paddingVertical: 18 * SCALE,
+    paddingBottom: 18 * SCALE, // paddingTop은 동적으로 적용
     backgroundColor: COLORS.white,
   },
   headerButton: {

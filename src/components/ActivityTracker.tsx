@@ -25,6 +25,35 @@ export function ActivityTracker({ onPointsEarned, userStats }: ActivityTrackerPr
     }
   };
 
+
+  // 레벨에 따른 색상 반환 함수
+  const getLevelColor = (levelId: string) => {
+    switch (levelId) {
+      case 'beginner':
+        return '#10B981'; // 초록색
+      case 'intermediate':
+        return '#059669'; // 진한 초록색
+      case 'expert':
+        return '#047857'; // 더 진한 초록색
+      default:
+        return '#10B981';
+    }
+  };
+
+  // 레벨에 따른 레벨 번호 반환 함수
+  const getLevelNumber = (levelId: string) => {
+    switch (levelId) {
+      case 'beginner':
+        return 1;
+      case 'intermediate':
+        return 2;
+      case 'expert':
+        return 3;
+      default:
+        return 1;
+    }
+  };
+
   return (
     <View>
       {/* 캐릭터 및 등급 섹션 */}
@@ -39,19 +68,19 @@ export function ActivityTracker({ onPointsEarned, userStats }: ActivityTrackerPr
         <View style={styles.levelCard}>
           {/* 상단 헤더 */}
           <View style={styles.levelCardHeader}>
-            <View style={styles.levelBadge}>
-              <Text style={styles.levelBadgeText}>LV.1</Text>
+            <View style={[styles.levelBadge, { backgroundColor: getLevelColor(userStats.currentLevel.id) }]}>
+              <Text style={styles.levelBadgeText}>LV.{getLevelNumber(userStats.currentLevel.id)}</Text>
             </View>
             <View style={styles.levelTitleContainer}>
               <Text style={styles.levelTitle}>{userStats.currentLevel.name}</Text>
-              <Text style={styles.levelSubtitle}>{userStats.currentLevel.description}</Text>
+              {/* <Text style={styles.levelSubtitle}>{userStats.currentLevel.description}</Text> */}
             </View>
           </View>
 
           {/* 진행도 섹션 */}
           <View style={styles.progressContainer}>
             <View style={styles.progressHeader}>
-              <Text style={styles.progressLabel}>다음 레벨까지 심어야 하는 원큐씨앗</Text>
+              <Text style={styles.progressLabel}>다음 레벨까지</Text>
               <Text style={styles.progressPercentage}>{Math.round(userStats.progressToNextLevel * 100)}%</Text>
             </View>
             
@@ -69,12 +98,13 @@ export function ActivityTracker({ onPointsEarned, userStats }: ActivityTrackerPr
           </View>
 
           {/* 다음 레벨 미리보기 */}
-          <View style={styles.nextLevelPreview}>
+          {/* <View style={styles.nextLevelPreview}>
             <Text style={styles.nextLevelText}>다음: {userStats.nextLevel.name} 🌿</Text>
             <Text style={styles.remainingPoints}>{userStats.pointsToNextLevel.toLocaleString()} 개 남음</Text>
-          </View>
+          </View> */}
         </View>
       </View>
+
     </View>
   );
 }
@@ -243,4 +273,30 @@ const styles = StyleSheet.create({
     fontSize: 12 * SCALE,
     color: '#6B7280',
   },
+
+  // 다음 레벨까지 필요한 원큐씨앗 표시 스타일
+  remainingSeedsContainer: {
+    marginTop: 16 * SCALE,
+    padding: 16 * SCALE,
+    backgroundColor: '#F0FDF4',
+    borderRadius: 12 * SCALE,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    alignItems: 'center',
+  },
+
+  remainingSeedsText: {
+    fontSize: 14 * SCALE,
+    color: '#065F46',
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 20 * SCALE,
+  },
+
+  remainingSeedsNumber: {
+    fontSize: 16 * SCALE,
+    fontWeight: '800',
+    color: '#10B981',
+  },
+
 }); 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SCALE } from '../../utils/constants';
+import { SCALE, getCardImageSource } from '../../utils/constants';
 import { LoadingState } from '../LoadingState';
 import { ErrorState } from '../ErrorState';
 import { NoDataState } from '../NoDataState';
@@ -12,6 +12,7 @@ interface UserCard {
   id: number;
   cardName: string;
   cardNumber: string;
+  cardImageUrl?: string;
 }
 
 interface CardsTabProps {
@@ -139,10 +140,10 @@ export const CardsTab: React.FC<CardsTabProps> = ({
                   </View>
                 </View>
                 <View style={styles.cardImageContainer}>
-                  <Image 
-                    source={require('../../../assets/hana_greenlife_card.png')} 
-                    style={styles.cardImage} 
-                    resizeMode="contain" 
+                  <Image
+                    source={getCardImageSource(card.cardImageUrl)}
+                    style={styles.cardImage}
+                    resizeMode="contain"
                   />
                 </View>
               </View>
@@ -173,7 +174,7 @@ export const CardsTab: React.FC<CardsTabProps> = ({
                   <Text style={styles.recommendCtaText}>→</Text>
                 </View>
               </View>
-              <Image source={require('../../../assets/hana_greenlife_card.png')} style={styles.recommendImage} resizeMode="contain" />
+              <Image source={getCardImageSource('hana_greenlife_card.png')} style={styles.recommendImage} resizeMode="contain" />
             </Pressable>
           </View>
         </>

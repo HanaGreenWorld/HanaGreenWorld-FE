@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import * as Ionicons from '@expo/vector-icons';
 import { SCALE } from '../utils/constants';
 
 interface Props {
@@ -23,7 +23,7 @@ export default function MethodCard({ index, title, icon, cta, disabled, onPress 
           <Text style={styles.title}>{title}</Text>
           <View style={styles.linkRow}>
             <Text style={styles.link}>{cta}</Text>
-            <Ionicons name="chevron-forward" size={16 * SCALE} color={disabled ? '#D1D5DB' : '#9CA3AF'} />
+            <Ionicons.Ionicons name="chevron-forward" size={16 * SCALE} color={disabled ? '#D1D5DB' : '#9CA3AF'} />
           </View>
         </View>
       </View>

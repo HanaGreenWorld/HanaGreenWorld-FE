@@ -25,7 +25,7 @@ interface ImageUploaderProps {
 export const ImageUploader: React.FC<ImageUploaderProps> = ({
   onImageSelected,
   selectedImage,
-  title = "📸 인증 사진 업로드",
+  title = "인증 사진 업로드",
   subtitle = "카메라로 촬영하거나 갤러리에서 선택하세요"
 }) => {
   const [showModal, setShowModal] = useState(false);
@@ -248,22 +248,23 @@ const { width } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 24 * SCALE, // 위아래 여백 증가
+    marginTop: 8 * SCALE,
+    marginBottom: 24 * SCALE,
   },
   uploadArea: {
     alignItems: 'center',
   },
   uploadButton: {
-    width: width - 64 * SCALE, // 양옆 여백 증가 (32 -> 64)
-    height: 200 * SCALE,
-    borderRadius: 16 * SCALE,
+    width: width - 32 * SCALE, // 양옆 여백 줄임
+    height: 240 * SCALE, // 높이 줄임
+    borderRadius: 12 * SCALE,
     borderWidth: 2,
     borderColor: COLORS.primary,
     borderStyle: 'dashed',
     backgroundColor: `${COLORS.primary}10`,
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 16 * SCALE, // 추가 여백
+    marginHorizontal: 8 * SCALE, // 여백 줄임
   },
   uploadButtonWithImage: {
     borderStyle: 'solid',
@@ -312,18 +313,18 @@ const styles = StyleSheet.create({
     marginBottom: 16 * SCALE,
   },
   uploadTitle: {
-    fontSize: 18 * SCALE,
+    fontSize: 14 * SCALE, // 크기 줄임
     fontWeight: 'bold',
     color: COLORS.text,
-    marginBottom: 8 * SCALE,
+    marginBottom: 4 * SCALE, // 여백 줄임
     textAlign: 'center',
   },
   uploadSubtitle: {
-    fontSize: 14 * SCALE,
+    fontSize: 12 * SCALE, // 크기 줄임
     color: COLORS.textLight,
     textAlign: 'center',
-    marginBottom: 16 * SCALE,
-    lineHeight: 20 * SCALE,
+    marginBottom: 8 * SCALE, // 여백 줄임
+    lineHeight: 16 * SCALE, // 줄간격 줄임
   },
   uploadHint: {
     flexDirection: 'row',

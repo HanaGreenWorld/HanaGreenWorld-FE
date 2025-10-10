@@ -2,12 +2,14 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable, Image, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SCALE, COLORS } from '../utils/constants';
 import { useUser } from '../hooks/useUser';
 import { logout } from '../utils/authUtils';
 
 export function Header() {
   const { userInfo, loading } = useUser();
+  const insets = useSafeAreaInsets();
   
   // 사용자 이름의 첫 글자를 아바타로 사용
   const getAvatarText = () => {
@@ -51,7 +53,7 @@ export function Header() {
   };
 
   return (
-    <View style={styles.headerContainer}>
+    <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
       <LinearGradient
         colors={[COLORS.primary, '#0A5A4F', '#0D4A42']}
         start={{ x: 0, y: 0 }}
@@ -66,7 +68,7 @@ export function Header() {
                 <Text style={styles.avatarText}>{getAvatarText()}</Text>
               </View>
               <View style={styles.userInfo}>
-                <Text style={styles.greeting}>안녕하세요! 🌱</Text>
+                <Text style={styles.greeting}>안녕하세요!</Text>
                 <Text style={styles.userName}>{getUserName()}</Text>
               </View>
             </View>
@@ -82,8 +84,7 @@ export function Header() {
 const styles = StyleSheet.create({
   headerContainer: {
     paddingHorizontal: 15 * SCALE,
-    paddingTop: 16 * SCALE,
-    paddingBottom: 20 * SCALE,
+    paddingBottom: 20 * SCALE, // paddingTop은 동적으로 적용
   },
   header: {
     borderRadius: 36 * SCALE,
