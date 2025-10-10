@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text } from 'react-native';
 // 순환 참조 방지를 위해 직접 import
 import { DashboardScreen } from '../screens/DashboardScreen';
+import SplashScreen from './SplashScreen';
 import PointsHistoryScreen from '../screens/PointsHistoryScreen';
 import { MyScreen } from '../screens/MyScreen';
 import { BenefitsScreen } from '../screens/BenefitsScreen';
@@ -28,6 +29,8 @@ import { useEcoSeeds } from '../hooks';
 
 // 화면 렌더링 로직을 분리한 컴포넌트
 export const ScreenRenderer: React.FC = () => {
+  const [showSplash, setShowSplash] = useState(true);
+  
   const {
     isLoggedIn,
     isInitialized,
@@ -76,6 +79,11 @@ export const ScreenRenderer: React.FC = () => {
 
   const { ecoSeedInfo, refreshProfile } = useEcoSeeds();
   const ecoSeeds = ecoSeedInfo.currentSeeds;
+
+  // 스플래시 화면 표시
+  if (showSplash) {
+    return <SplashScreen onFinish={() => setShowSplash(false)} />;
+  }
 
   // 초기화가 완료되지 않은 경우 로딩 표시
   if (!isInitialized) {

@@ -2,21 +2,21 @@ import 'dotenv/config';
 
 export default {
   expo: {
-    name: "HanaGreenPlusWeb",
-    slug: "HanaGreenPlusWeb",
+    name: "하나은행",
+    slug: "하나은행",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/hana_logo.png",
+    icon: "./assets/hana1q1.png",
     userInterfaceStyle: "light",
     newArchEnabled: true,
     splash: {
-      image: "./assets/hana_logo.png",
+      image: "./assets/hana1q2.png",
       resizeMode: "contain",
       backgroundColor: "#ffffff"
     },
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.jimpark.hanagreenplusweb",
+      bundleIdentifier: "com.jimpark.hanagreenworld",
       infoPlist: {
         NSLocationWhenInUseUsageDescription: "친환경 가맹점을 찾기 위해 위치 정보가 필요합니다.",
         NSLocationAlwaysAndWhenInUseUsageDescription: "친환경 가맹점을 찾기 위해 위치 정보가 필요합니다.",
@@ -42,11 +42,11 @@ export default {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/hana_logo.png",
+        foregroundImage: "./assets/hana1q1.png",
         backgroundColor: "#ffffff"
       },
       edgeToEdgeEnabled: true,
-      package: "com.jimpark.hanagreenplusweb",
+      package: "com.jimpark.hanagreenworld",
       usesCleartextTraffic: true,
       networkSecurityConfig: {
         cleartextTrafficPermitted: true,
@@ -63,7 +63,7 @@ export default {
       ]
     },
     web: {
-      favicon: "./assets/hana_logo.png"
+      favicon: "./assets/hana1q1.png"
     },
     plugins: [
       "expo-dev-client",

@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "하나green세상",
-    "slug": "하나green세상",
+    "name": "하나은행",
+    "slug": "하나은행",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/hana_logo.png",
+    "icon": "./assets/hana1q1.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/hana_logo.png",
+      "image": "./assets/hana1q2.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -32,7 +32,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/hana_logo.png",
+        "foregroundImage": "./assets/hana1q1.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
@@ -46,7 +46,7 @@
       ]
     },
     "web": {
-      "favicon": "./assets/hana_logo.png"
+      "favicon": "./assets/hana1q1.png"
     },
     "plugins": [
       [
