@@ -13,10 +13,28 @@ interface BankHomeMockScreenProps {
 export default function BankHomeMockScreen({ onGoGreenPlay, onBack }: BankHomeMockScreenProps) {
   const [userAccounts, setUserAccounts] = useState<UserBankAccountInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [entryTime] = useState(new Date()); // 처음 들어간 시점의 타임스탬프로 고정
 
   useEffect(() => {
     loadUserAccounts();
   }, []);
+
+  // 시간 포맷 함수
+  const formatTime = (date: Date) => {
+    const year = date.getFullYear().toString().slice(-2);
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const seconds = date.getSeconds().toString().padStart(2, '0');
+    
+    return `${year}.${month}.${day} ${hours}:${minutes}:${seconds}`;
+  };
+
+  // 현재 월 가져오기
+  const getCurrentMonth = () => {
+    return `${entryTime.getMonth() + 1}월`;
+  };
 
   const loadUserAccounts = async () => {
     try {
@@ -190,22 +208,22 @@ export default function BankHomeMockScreen({ onGoGreenPlay, onBack }: BankHomeMo
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cardsSlider}>
           {/* Left green card - clickable to green play */}
           <Pressable style={[styles.promoCard, styles.greenCard, styles.sliderCard]} onPress={onGoGreenPlay}>
-            <View style={styles.promoIcon}><Ionicons name="leaf" size={18 * SCALE} color="#0F8A80" /></View>
-            <Text style={styles.promoTitle}>함께하는{'\n'}그린 Life</Text>
+            <Image source={require('../../assets/sprout.png')} style={styles.bannerImage} resizeMode="contain" />
+            <Text style={styles.promoTitle}>HANA로 그린{'\n'}하나그린세상</Text>
             <Text style={styles.detailMuted}>자세히보기</Text>
           </Pressable>
 
           {/* Middle card */}
           <View style={[styles.promoCard, styles.blueCard, styles.sliderCard]}>
-            <View style={styles.promoIcon}><Ionicons name="gift" size={18 * SCALE} color="#1E40AF" /></View>
-            <Text style={styles.promoTitle}>혜택이 좋아요{'\n'}놀이터</Text>
+            <Image source={require('../../assets/basketball.png')} style={styles.bannerImage} resizeMode="contain" />
+            <Text style={styles.promoTitle}>게임처럼 즐기는{'\n'}농구Play</Text>
             <Text style={styles.detailMuted}>자세히보기</Text>
           </View>
 
           {/* Right placeholder card */}
           <View style={[styles.promoCard, styles.pinkCard, styles.sliderCard]}>
-            <View style={styles.promoIcon}><Ionicons name="ticket" size={18 * SCALE} color="#9D174D" /></View>
-            <Text style={styles.promoTitle}>이벤트 존</Text>
+            <Image source={require('../../assets/soccerball.png')} style={styles.bannerImage} resizeMode="contain" />
+            <Text style={styles.promoTitle}>매일매일 신나는{'\n'}축구Play</Text>
             <Text style={styles.detailMuted}>자세히보기</Text>
           </View>
         </ScrollView>
@@ -213,8 +231,8 @@ export default function BankHomeMockScreen({ onGoGreenPlay, onBack }: BankHomeMo
         {/* 이벤트 배너 */}
         <View style={styles.eventBanner}>
           <View style={styles.eventLeft}>
-            <Text style={styles.eventSmallTitle}>하나 합 7~8월 이벤트</Text>
-            <Text style={styles.eventHeadline}>머니 후름라이드 타면{"\n"}신나는 선물 100% 당첨</Text>
+            <Text style={styles.eventSmallTitle}>하나그린세상</Text>
+            <Text style={styles.eventHeadline}>매일매일 미션 참여하고{"\n"}매일매일 원큐씨앗 받자!</Text>
             <View style={styles.eventPagerRow}>
               <View style={styles.pagerBtn}><Ionicons name="chevron-back" size={12 * SCALE} color="#6B7280" /></View>
               <Text style={styles.pagerText}>1/10</Text>
@@ -222,14 +240,14 @@ export default function BankHomeMockScreen({ onGoGreenPlay, onBack }: BankHomeMo
               <View style={styles.pagerBtn}><Ionicons name="chevron-forward" size={12 * SCALE} color="#6B7280" /></View>
             </View>
           </View>
-          <Image source={require('../../assets/money_flumeride.png')} style={styles.eventImage} resizeMode="contain" />
-        </View>
+         <Image source={require('../../assets/beginner.png')} style={styles.eventImage} resizeMode="contain" />
+        </View> 
 
-        {/* 8월 지출 카드 */}
+        {/* 지출 카드 */}
         <View style={styles.spendCard}>
           <View style={styles.spendHeaderRow}>
-            <Text style={styles.spendTitle}>8월 지출</Text>
-            <Text style={styles.spendDate}>25.08.11 13:37:02</Text>
+            <Text style={styles.spendTitle}>{getCurrentMonth()} 지출</Text>
+            <Text style={styles.spendDate}>{formatTime(entryTime)}</Text>
           </View>
           <View style={styles.spendAmountRow}>
             <Text style={styles.spendAmount}>0</Text>
@@ -295,7 +313,7 @@ const styles = StyleSheet.create({
   pagerBtn: { width: 24 * SCALE, height: 24 * SCALE, borderRadius: 12 * SCALE, backgroundColor: '#EEF2F7', alignItems: 'center', justifyContent: 'center' },
   pagerText: { fontSize: 12 * SCALE, color: '#6B7280', fontWeight: '700' },
   eventImage: { width: 110 * SCALE, height: 90 * SCALE, marginTop: -8 * SCALE },
-
+  bannerImage: { width: 30 * SCALE, height: 30 * SCALE, marginTop: 8 * SCALE, marginBottom: 16 * SCALE },
   spendCard: { backgroundColor: '#FFFFFF', borderRadius: 22 * SCALE, padding: 20 * SCALE, borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 16 * SCALE, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8 },
   spendHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 * SCALE, marginBottom: 12 * SCALE },
   spendTitle: { fontSize: 18 * SCALE, fontWeight: '600', color: '#1F2937' },
@@ -338,7 +356,7 @@ const styles = StyleSheet.create({
   sliderCard: { width:150 * SCALE, height: 180 * SCALE, marginRight: 12 * SCALE },
   promoIcon: { width: 48 * SCALE, height: 48 * SCALE, borderRadius: 16 * SCALE, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', marginBottom: 16 * SCALE, borderWidth: 1, borderColor: '#E5E7EB' },
   promoTitle: { fontSize: 18 * SCALE, fontWeight: '700', color: '#111827', marginBottom: 8 * SCALE },
-  detailMuted: { fontSize: 12 * SCALE, color: '#6B7280', position: 'absolute', left: 16 * SCALE, bottom: 12 * SCALE },
+  detailMuted: { fontSize: 12 * SCALE, color: '#6B7280', position: 'absolute', left: 16 * SCALE, bottom: 24 * SCALE },
 
   bottomMenu: { backgroundColor: '#FFFFFF', paddingTop: 12 * SCALE, borderTopWidth: 1, borderTopColor: '#E5E7EB' },
   quickChips: { paddingHorizontal: 16 * SCALE, gap: 12 * SCALE, alignItems: 'center' },
