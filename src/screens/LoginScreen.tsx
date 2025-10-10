@@ -11,7 +11,7 @@ import {
   Image,
   ScrollView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+// SafeAreaView는 PhoneFrame에서 처리됨
 import { saveAuthToken, removeAuthToken } from '../utils/authUtils';
 import { API_BASE_URL } from '../utils/constants';
 import { testNetworkConnection, testLogin } from '../utils/testApi';
@@ -151,7 +151,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
@@ -196,7 +196,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             </View>
 
             {/* 테스트 버튼들 */}
-            <View style={styles.testButtons}>
+            {/* <View style={styles.testButtons}>
               <TouchableOpacity
                 style={styles.testButton}
                 onPress={handleTestNetwork}
@@ -210,15 +210,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               >
                 <Text style={styles.testButtonText}>🔑 로그인 테스트</Text>
               </TouchableOpacity>
-            </View>
+            </View> */}
 
             {/* 토큰 초기화 버튼 */}
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={styles.clearTokenButton}
               onPress={handleClearToken}
             >
               <Text style={styles.clearTokenButtonText}>🗑️ 토큰 초기화</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             {/* 로그인 버튼 */}
             <TouchableOpacity
@@ -239,15 +239,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             </TouchableOpacity>
 
             {/* 테스트 계정 정보 */}
-            <View style={styles.testAccountContainer}>
+            {/* <View style={styles.testAccountContainer}>
               <Text style={styles.testAccountTitle}>테스트 계정</Text>
               <Text style={styles.testAccountText}>아이디: testuser</Text>
               <Text style={styles.testAccountText}>비밀번호: test1234!</Text>
-            </View>
+            </View> */}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 };
 

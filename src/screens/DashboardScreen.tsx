@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Text, Dimensions, Pressable, StatusBar } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Text, Dimensions, Pressable, StatusBar, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Header } from '../components/Header';
 import TopBar from '../components/TopBar';
@@ -22,6 +22,9 @@ export function DashboardScreen({ onNavigateToHistory, onBack, onHome, ecoSeeds:
   const { ecoSeedInfo, loading: ecoSeedsLoading, refreshProfile } = useEcoSeeds();
   const { userStats, loading: statsLoading } = useUserStats();
   
+  // 전체 로딩 상태 통합
+  const isAnyLoading = loading || ecoSeedsLoading || statsLoading;
+  
   // 일관된 데이터 사용을 위해 ecoSeedInfo의 currentSeeds를 우선 사용
   const displayEcoSeeds = ecoSeedInfo?.currentSeeds ?? propEcoSeeds ?? 0;
 
@@ -34,6 +37,20 @@ export function DashboardScreen({ onNavigateToHistory, onBack, onHome, ecoSeeds:
     // 컴포넌트 마운트 시에도 새로고침
     handleFocus();
   }, [refreshProfile]);
+
+  // 전체 로딩 상태일 때 로딩 스피너 표시
+  if (isAnyLoading) {
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" />
+        <TopBar title="내 정원" onBack={onBack} onHome={onHome} />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0F8A80" />
+          <Text style={styles.loadingText}>데이터를 불러오는 중...</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -51,7 +68,7 @@ export function DashboardScreen({ onNavigateToHistory, onBack, onHome, ecoSeeds:
             <Text style={styles.balanceLabel}>원큐씨앗</Text>
             <View style={styles.balanceAmountContainer}>
               <Text style={styles.balanceAmount}>
-                {loading ? '로딩 중...' : displayEcoSeeds.toLocaleString()}
+                {displayEcoSeeds.toLocaleString()}
               </Text>
               <Text style={styles.balanceUnit}> 개</Text>
             </View>
@@ -60,7 +77,7 @@ export function DashboardScreen({ onNavigateToHistory, onBack, onHome, ecoSeeds:
             <Text style={styles.balanceLabel}>하나머니</Text>
             <View style={styles.balanceAmountContainer}>
               <Text style={styles.balanceAmountMoney}>
-                {loading ? '로딩 중...' : hanaMoney.toLocaleString()}
+                {hanaMoney.toLocaleString()}
               </Text>
               <Text style={styles.balanceUnit}> 원</Text>
             </View>
@@ -69,10 +86,7 @@ export function DashboardScreen({ onNavigateToHistory, onBack, onHome, ecoSeeds:
         {userStats && (
           <ActivityTracker 
             onPointsEarned={addPoints}
-            userStats={{
-              ...userStats,
-              monthlyPoints: todayPoints, // 현재 월 포인트는 usePoints에서 가져온 값 사용
-            }}
+            userStats={userStats}
           />
         )}
         <FeatureCards />
@@ -163,5 +177,17 @@ const styles = StyleSheet.create({
   headerRight: {
     flexDirection: 'row',
     gap: 5 * SCALE,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+  },
+  loadingText: {
+    marginTop: 16 * SCALE,
+    fontSize: 16 * SCALE,
+    color: '#6B7280',
+    fontWeight: '500',
   },
 }); 

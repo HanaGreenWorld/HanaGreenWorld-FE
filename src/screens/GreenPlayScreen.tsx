@@ -198,32 +198,36 @@ export const GreenPlayScreen: React.FC<GreenPlayScreenProps> = ({ onBack, onEnte
               <TouchableOpacity style={styles.activityCard} onPress={onNavigateToQuiz}>
                 <Text style={styles.activityCardTitle}>퀴즈</Text>
                 <Text style={styles.activityCardSubtitle}>HANA</Text>
-                <View style={[
-                  styles.statusButton, 
-                  actualQuizCompleted ? styles.statusButtonGreen : styles.statusButtonRed
-                ]}>
-                  <Text style={styles.statusButtonText}>
-                    {actualQuizCompleted ? '참여완료' : '미참여'}
-                  </Text>
-                </View>
+                <Image 
+                  source={require('../../assets/hana3dIcon/hanaIcon3d_3_103.png')} 
+                  style={styles.activityCardIcon} 
+                  resizeMode="contain" 
+                />
               </TouchableOpacity>
               <TouchableOpacity style={styles.activityCard} onPress={onNavigateToEcoChallenge}>
                 <Text style={styles.activityCardTitle}>챌린지</Text>
                 <Text style={styles.activityCardSubtitle}>HANA</Text>
-                <View style={[styles.statusButton, styles.statusButtonBlue]}>
-                  <Text style={styles.statusButtonText}>미참여</Text>
-                </View>
+                <Image 
+                  source={require('../../assets/hana3dIcon/hanaIcon3d_51.png')} 
+                  style={styles.activityCardIcon} 
+                  resizeMode="contain" 
+                />
               </TouchableOpacity>
               <TouchableOpacity style={styles.activityCard} onPress={onNavigateToTeams}>
                 <Text style={styles.activityCardTitle}>다함께</Text>
                 <Text style={styles.activityCardSubtitle}>HANA</Text>
-                <View style={[styles.statusButton, styles.statusButtonGreen]}>
-                  <Text style={styles.statusButtonText}>미참여</Text>
-                </View>
+                                <Image 
+                  source={require('../../assets/green_team.png')} 
+                  style={styles.activityCardIcon} 
+                  resizeMode="contain" 
+                />
               </TouchableOpacity>
             </View>
             {/* 친환경 가맹점 확인하기 */}
             <EcoStoreButton onPress={onNavigateToEcoMerchants} />
+            
+            {/* 하단 여백 추가 */}
+            <View style={styles.bottomSpacer} />
           </LinearGradient>
         </View>
       </ScrollView>
@@ -466,17 +470,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   activityCardTitle: {
-    fontSize: 12 * SCALE,
+    fontSize: 16 * SCALE,
     color: '#fff',
     fontWeight: '600',
+    marginTop: 12 * SCALE,
     marginBottom: 4 * SCALE,
     textAlign: 'center',
   },
   activityCardSubtitle: {
-    fontSize: 10 * SCALE,
+    fontSize: 14 * SCALE,
     color: '#ccc',
-    marginBottom: 8 * SCALE,
+    marginBottom: 12 * SCALE,
     textAlign: 'center',
+  },
+  activityCardIcon: {
+    width: 40 * SCALE,
+    height: 40 * SCALE,
+    marginLeft: 40 * SCALE,
   },
   statusButton: {
     paddingHorizontal: 8 * SCALE,
@@ -493,6 +503,9 @@ const styles = StyleSheet.create({
   },
   statusButtonGreen: {
     backgroundColor: '#44FF44',
+  },
+  statusButtonGray: {
+    backgroundColor: '#6B7280',
   },
   statusButtonText: {
     fontSize: 8 * SCALE,
@@ -527,7 +540,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 12 * SCALE,
     padding: 20 * SCALE,
-    marginBottom: 120 * SCALE, // 하단 여백 증가 (100 -> 120)
+    marginBottom: 120 * SCALE,
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
@@ -541,6 +554,9 @@ const styles = StyleSheet.create({
     fontSize: 16 * SCALE,
     color: '#111827',
     fontWeight: '600',
+  },
+  bottomSpacer: {
+    height: 80 * SCALE, // 하단 여백 추가
   },
   // Savings Status Styles
   savingsStatusIcon: {
