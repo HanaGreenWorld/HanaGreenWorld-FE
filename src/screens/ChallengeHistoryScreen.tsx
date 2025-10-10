@@ -106,7 +106,7 @@ export default function ChallengeHistoryScreen({ onBack }: ChallengeHistoryScree
               <Ionicons name="trophy-outline" size={48 * SCALE} color={COLORS.textLight} />
             </View>
             <Text style={styles.emptyTitle}>아직 참여한 챌린지가 없어요</Text>
-            <Text style={styles.emptySubtitle}>에코 챌린지에 참여해서 씨앗을 모아보세요! 🌱</Text>
+            <Text style={styles.emptySubtitle}>에코 챌린지에 참여해서 씨앗을 모아보세요!</Text>
           </View>
         ) : (
           <>

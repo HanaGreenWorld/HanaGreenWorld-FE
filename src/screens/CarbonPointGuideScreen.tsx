@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, Pressable, Linking } from 'react-native';
 import { SCALE } from '../utils/constants';
-import { Ionicons } from '@expo/vector-icons';
-import { TipBubble } from '../components/TipBubble';
-import { MethodCard } from '../components/MethodCard';
+import * as Ionicons from '@expo/vector-icons';
+import TipBubble from '../components/TipBubble';
+import MethodCard from '../components/MethodCard';
 
 interface Props { onBack?: () => void; onHome?: () => void; onOpenReceipt?: () => void }
 
@@ -13,7 +13,7 @@ export default function CarbonPointGuideScreen({ onBack, onOpenReceipt }: Props)
       {/* Custom Header (no TopBar) */}
       <View style={styles.header}>
         <Pressable onPress={onBack} style={styles.headerBtn}>
-          <Ionicons name="close" size={24 * SCALE} color="#111827" />
+          <Ionicons.Ionicons name="close" size={24 * SCALE} color="#111827" />
         </Pressable>
         <Text style={styles.headerTitle}>탄소중립포인트 안내</Text>
         <View style={styles.headerBtn} />

@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, ScrollView, Pressable, Image } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { SCALE, COLORS } from '../utils/constants';
 import TopBar from '../components/TopBar';
+import { useCalendarData } from '../hooks/useCalendarData';
+import { useApp } from '../contexts/AppContext';
 
 interface BenefitsScreenProps {
   onBack?: () => void;
@@ -15,34 +17,30 @@ interface BenefitsScreenProps {
 }
 
 export function BenefitsScreen({ onBack, onHome, onNavigateToQuiz, onNavigateToWalking, onNavigateToEcoMerchants, onNavigateToEcoChallenge, onNavigateToElectronicReceipt }: BenefitsScreenProps) {
-  // 출석 위젯 상태(데모 더미)
-  // 달력: 일자별 획득 씨앗(0이면 미참여)
-  const earningsByDay = React.useMemo(() => ({
-    1: 50,
-    2: 0,
-    3: 50,
-    4: 100,
-    5: 0,
-    6: 50,
-    7: 50,
-    8: 50,
-    12: 0,
-    13: 0,
-    14: 0,
-    15: 0,
-    16: 0,
-  }), []);
-  const myPercentile = 12; // 동연령대 상위 12%
-  const myRankText = `동연령대 상위 ${myPercentile}%`;
-
+  // 로그인 상태 확인
+  const { isLoggedIn } = useApp();
+  
   // 달력 데이터 만들기
   const now = new Date();
   const year = now.getFullYear();
-  const month = now.getMonth(); // 0~11
-  const firstDay = new Date(year, month, 1);
+  const month = now.getMonth() + 1; // 1~12로 변환
+  const firstDay = new Date(year, month - 1, 1); // month는 0~11이므로 -1
   const firstDow = firstDay.getDay(); // 0:일
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const monthLabel = `${year}.${String(month + 1).padStart(2, '0')}`;
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const monthLabel = `${year}.${String(month).padStart(2, '0')}`;
+
+  // 로그인된 경우에만 API에서 달력 데이터 가져오기
+  const { calendarData, loading: calendarLoading, error: calendarError } = useCalendarData(
+    isLoggedIn ? year : 0, 
+    isLoggedIn ? month : 0
+  );
+  
+  // API 데이터가 없을 때 기본값
+  const earningsByDay = isLoggedIn ? (calendarData?.dailyEarnings || {}) : {};
+  const totalMonthlyEarnings = isLoggedIn ? (calendarData?.totalEarnings || 0) : 0;
+  
+  const myPercentile = 12; // 동연령대 상위 12%
+  const myRankText = `동연령대 상위 ${myPercentile}%`;
   // 더보기의 혜택 카드 모양을 그대로 차용한 데이터 구조 (아이콘 이미지 + 타이틀 + 서브)
   const benefits = [
     {
@@ -60,8 +58,8 @@ export function BenefitsScreen({ onBack, onHome, onNavigateToQuiz, onNavigateToW
     {
       id: 'receipt',
       image: require('../../assets/hana3dIcon/hanaIcon3d_4_13.png'),
-      title: '전자영수증',
-      subtitle: '종이 대신 전자영수증 사용',
+      title: '전자확인증',
+      subtitle: '종이 대신 전자확인증 사용',
     },
     {
       id: 'eco-store',
@@ -90,7 +88,14 @@ export function BenefitsScreen({ onBack, onHome, onNavigateToQuiz, onNavigateToW
       <View style={styles.calendarCard}>
         <View style={styles.calendarHeaderRow}>
           <Text style={styles.calendarMonth}>{monthLabel}</Text>
-          <Text style={styles.calendarCount}>이번달 획득 씨앗</Text>
+          <Text style={styles.calendarCount}>
+            {!isLoggedIn 
+              ? '로그인 후 씨앗 현황을 확인하세요' 
+              : calendarLoading 
+                ? '로딩 중...' 
+                : `이번달 획득 씨앗 ${totalMonthlyEarnings.toLocaleString()}개`
+            }
+          </Text>
         </View>
         <View style={styles.calendarWeekRow}>
           {['일','월','화','수','목','금','토'].map((d) => (
@@ -103,7 +108,7 @@ export function BenefitsScreen({ onBack, onHome, onNavigateToQuiz, onNavigateToW
           ))}
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const day = i + 1;
-            const amount = (earningsByDay as any)[day] || 0;
+            const amount = earningsByDay[day] || 0;
             const participated = amount > 0;
             return (
               <View key={`day-${day}`} style={styles.calendarCell}>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, RefreshControl, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SCALE, COLORS } from '../utils/constants';
 import { challengeApi, ChallengeRecord } from '../utils/challengeApi';
@@ -14,6 +14,8 @@ export default function SeedHistoryScreen({ onBack }: SeedHistoryScreenProps) {
   const [challengeRecords, setChallengeRecords] = useState<ChallengeRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<ChallengeRecord | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   // 완료된 챌린지 내역 조회
   const fetchCompletedChallenges = async () => {
@@ -22,10 +24,22 @@ export default function SeedHistoryScreen({ onBack }: SeedHistoryScreenProps) {
       console.log('씨앗 내역 조회 시작...');
       const records = await challengeApi.getMyChallengeParticipations();
       console.log('참여 내역 조회 결과:', records);
+      console.log('참여 내역 개수:', records.length);
       
-      // 인증 완료된 챌린지만 필터링
-      const completedRecords = records.filter(record => record.verificationStatus === 'VERIFIED');
-      console.log('완료된 챌린지:', completedRecords);
+      // API에서 데이터가 없거나 빈 배열인 경우 디버깅
+      if (!records || records.length === 0) {
+        console.log('⚠️ API에서 참여 내역이 없습니다. 로그인 상태나 API 연결을 확인해주세요.');
+        setChallengeRecords([]);
+        return;
+      }
+      
+      // 참여한 모든 챌린지 표시 (상태에 관계없이)
+      const completedRecords = records.filter(record => {
+        console.log(`챌린지 ${record.challenge.id} (${record.challenge.title}) 상태:`, record.verificationStatus);
+        // NOT_PARTICIPATED가 아닌 모든 상태를 표시
+        return record.verificationStatus !== 'NOT_PARTICIPATED';
+      });
+      console.log('참여한 챌린지:', completedRecords);
       
       setChallengeRecords(completedRecords);
     } catch (error) {
@@ -119,20 +133,20 @@ export default function SeedHistoryScreen({ onBack }: SeedHistoryScreenProps) {
         ) : challengeRecords.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyIcon}>🌿</Text>
-            <Text style={styles.emptyTitle}>아직 받은 씨앗이 없어요</Text>
+            <Text style={styles.emptyTitle}>아직 참여한 챌린지가 없어요</Text>
             <Text style={styles.emptyText}>에코 챌린지에 참여해서 씨앗을 모아보세요! 🌱</Text>
           </View>
         ) : (
           <>
             {/* 헤더 섹션 */}
             <View style={styles.headerSection}>
-              <Text style={styles.headerTitle}>받은 챌린지 씨앗</Text>
+              <Text style={styles.headerTitle}>참여한 챌린지</Text>
               <Text style={styles.headerPoints}>{totalSeeds} 씨앗</Text>
               <View style={styles.headerSubtitle}>
                 <View style={styles.pointIcon}>
                   <Text style={styles.pointIconText}>P</Text>
                 </View>
-                <Text style={styles.headerSubtitleText}>챌린지 달성하고 받은 씨앗 내역</Text>
+                <Text style={styles.headerSubtitleText}>참여한 챌린지 내역</Text>
               </View>
             </View>
 
@@ -141,10 +155,23 @@ export default function SeedHistoryScreen({ onBack }: SeedHistoryScreenProps) {
               <View key={date} style={styles.dateGroup}>
                 <Text style={styles.dateLabel}>{date}</Text>
                 {records.map((record) => (
-                  <View key={record.id} style={styles.seedItem}>
+                  <Pressable 
+                    key={record.id} 
+                    style={styles.seedItem}
+                    onPress={() => {
+                      setSelectedRecord(record);
+                      setShowDetailModal(true);
+                    }}
+                  >
                     <View style={styles.seedInfo}>
                       <Text style={styles.seedTitle}>{record.challenge.title}</Text>
-                      <Text style={styles.seedSubtitle}>챌린지 완료</Text>
+                      <Text style={styles.seedSubtitle}>
+                        {record.verificationStatus === 'APPROVED' ? '챌린지 완료' :
+                         record.verificationStatus === 'REJECTED' ? '챌린지 실패' :
+                         record.verificationStatus === 'NEEDS_REVIEW' ? '검토 대기' :
+                         record.verificationStatus === 'PENDING' ? '검증 중' :
+                         '참여완료'}
+                      </Text>
                       {record.imageUrl && (
                         <View style={styles.imageBadge}>
                           <Ionicons name="camera" size={12 * SCALE} color="white" />
@@ -153,9 +180,18 @@ export default function SeedHistoryScreen({ onBack }: SeedHistoryScreenProps) {
                       )}
                     </View>
                     <View style={styles.seedReward}>
-                      <Text style={styles.seedRewardText}>+{record.pointsAwarded || 0} 씨앗</Text>
+                      <Text style={styles.seedRewardText}>
+                        {record.verificationStatus === 'APPROVED' ? 
+                          `+${record.pointsAwarded || 0} 씨앗` :
+                          record.verificationStatus === 'REJECTED' ? '실패' :
+                          record.verificationStatus === 'NEEDS_REVIEW' ? '검토 대기' :
+                          record.verificationStatus === 'PENDING' ? '검증 중' :
+                          '참여완료'
+                        }
+                      </Text>
                     </View>
-                  </View>
+                    <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+                  </Pressable>
                 ))}
               </View>
             ))}
@@ -164,6 +200,118 @@ export default function SeedHistoryScreen({ onBack }: SeedHistoryScreenProps) {
         
         <View style={{ height: 80 * SCALE }} />
       </ScrollView>
+
+      {/* 챌린지 상세 모달 */}
+      {selectedRecord && (
+        <Modal
+          visible={showDetailModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowDetailModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>{selectedRecord.challenge.title}</Text>
+                <Pressable 
+                  style={styles.closeButton}
+                  onPress={() => setShowDetailModal(false)}
+                >
+                  <Ionicons name="close" size={24} color="#6B7280" />
+                </Pressable>
+              </View>
+
+              <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+                {/* 챌린지 상태 */}
+                <View style={styles.statusSection}>
+                  <Text style={styles.statusLabel}>상태</Text>
+                  <View style={styles.statusContainer}>
+                    <Text style={[
+                      styles.statusText,
+                      selectedRecord.verificationStatus === 'APPROVED' ? styles.statusSuccess :
+                      selectedRecord.verificationStatus === 'REJECTED' ? styles.statusError :
+                      styles.statusWarning
+                    ]}>
+                      {selectedRecord.verificationStatus === 'APPROVED' ? '✅ 챌린지 완료' :
+                       selectedRecord.verificationStatus === 'REJECTED' ? '❌ 챌린지 실패' :
+                       selectedRecord.verificationStatus === 'NEEDS_REVIEW' ? '🟡 검토 대기' :
+                       selectedRecord.verificationStatus === 'PENDING' ? '⏳ 검증 중' :
+                       '참여완료'}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* 인증 사진 */}
+                {selectedRecord.imageUrl && (
+                  <View style={styles.imageSection}>
+                    <Text style={styles.sectionTitle}>인증 사진</Text>
+                    <View style={styles.imageContainer}>
+                      <Image 
+                        source={{ uri: selectedRecord.imageUrl }}
+                        style={styles.verificationImage}
+                        resizeMode="cover"
+                      />
+                    </View>
+                  </View>
+                )}
+
+                {/* AI 검증 결과 */}
+                {(selectedRecord.aiConfidence || selectedRecord.aiExplanation) && (
+                  <View style={styles.aiSection}>
+                    <Text style={styles.sectionTitle}>AI 검증 결과</Text>
+                    <View style={styles.aiResultCard}>
+                      {selectedRecord.aiConfidence && (
+                        <View style={styles.aiResultRow}>
+                          <Text style={styles.aiResultLabel}>신뢰도:</Text>
+                          <Text style={styles.aiResultValue}>
+                            {Math.round(selectedRecord.aiConfidence * 100)}%
+                          </Text>
+                        </View>
+                      )}
+                      {selectedRecord.aiExplanation && (
+                        <View style={styles.aiResultRow}>
+                          <Text style={styles.aiResultLabel}>설명:</Text>
+                          <Text style={styles.aiResultDescription}>
+                            {selectedRecord.aiExplanation}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                )}
+
+                {/* 챌린지 정보 */}
+                <View style={styles.infoSection}>
+                  <Text style={styles.sectionTitle}>챌린지 정보</Text>
+                  <View style={styles.infoCard}>
+                    <View style={styles.infoRow}>
+                      <Text style={styles.infoLabel}>참여일:</Text>
+                      <Text style={styles.infoValue}>
+                        {new Date(selectedRecord.activityDate).toLocaleDateString('ko-KR')}
+                      </Text>
+                    </View>
+                    {selectedRecord.pointsAwarded && (
+                      <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>획득 씨앗:</Text>
+                        <Text style={styles.infoValue}>+{selectedRecord.pointsAwarded} 씨앗</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              </ScrollView>
+
+              <View style={styles.modalFooter}>
+                <Pressable 
+                  style={styles.modalButton}
+                  onPress={() => setShowDetailModal(false)}
+                >
+                  <Text style={styles.modalButtonText}>닫기</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
     </View>
   );
 }
@@ -334,5 +482,178 @@ const styles = StyleSheet.create({
     fontSize: 10 * SCALE,
     fontWeight: '600',
     marginLeft: 4 * SCALE,
+  },
+
+  // 모달 스타일
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20 * SCALE,
+  },
+  modalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20 * SCALE,
+    width: '100%',
+    maxWidth: 400 * SCALE,
+    maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20 * SCALE,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  modalTitle: {
+    fontSize: 18 * SCALE,
+    fontWeight: '700',
+    color: '#111827',
+    flex: 1,
+  },
+  closeButton: {
+    padding: 4 * SCALE,
+  },
+  modalContent: {
+    maxHeight: 400 * SCALE,
+    padding: 20 * SCALE,
+  },
+  modalFooter: {
+    padding: 20 * SCALE,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  modalButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 12 * SCALE,
+    paddingVertical: 14 * SCALE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16 * SCALE,
+    fontWeight: '700',
+  },
+
+  // 섹션 스타일
+  statusSection: {
+    marginBottom: 20 * SCALE,
+  },
+  statusLabel: {
+    fontSize: 16 * SCALE,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8 * SCALE,
+  },
+  statusContainer: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12 * SCALE,
+    padding: 16 * SCALE,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  statusText: {
+    fontSize: 16 * SCALE,
+    fontWeight: '600',
+  },
+  statusSuccess: {
+    color: '#059669',
+  },
+  statusError: {
+    color: '#DC2626',
+  },
+  statusWarning: {
+    color: '#D97706',
+  },
+
+  imageSection: {
+    marginBottom: 20 * SCALE,
+  },
+  sectionTitle: {
+    fontSize: 16 * SCALE,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 12 * SCALE,
+  },
+  imageContainer: {
+    borderRadius: 12 * SCALE,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  verificationImage: {
+    width: '100%',
+    height: 200 * SCALE,
+  },
+
+  aiSection: {
+    marginBottom: 20 * SCALE,
+  },
+  aiResultCard: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12 * SCALE,
+    padding: 16 * SCALE,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  aiResultRow: {
+    flexDirection: 'row',
+    marginBottom: 8 * SCALE,
+    alignItems: 'flex-start',
+  },
+  aiResultLabel: {
+    fontSize: 14 * SCALE,
+    fontWeight: '600',
+    color: '#374151',
+    width: 60 * SCALE,
+    marginRight: 8 * SCALE,
+  },
+  aiResultValue: {
+    fontSize: 14 * SCALE,
+    fontWeight: '600',
+    color: '#1F2937',
+    flex: 1,
+  },
+  aiResultDescription: {
+    fontSize: 13 * SCALE,
+    color: '#6B7280',
+    lineHeight: 18 * SCALE,
+    flex: 1,
+  },
+
+  infoSection: {
+    marginBottom: 20 * SCALE,
+  },
+  infoCard: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12 * SCALE,
+    padding: 16 * SCALE,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    marginBottom: 8 * SCALE,
+    alignItems: 'center',
+  },
+  infoLabel: {
+    fontSize: 14 * SCALE,
+    fontWeight: '600',
+    color: '#374151',
+    width: 80 * SCALE,
+  },
+  infoValue: {
+    fontSize: 14 * SCALE,
+    fontWeight: '600',
+    color: '#1F2937',
+    flex: 1,
   },
 });

@@ -13,6 +13,9 @@ type LocalChallenge = ApiChallenge & {
   icon: any;
   completedAt?: string;
   pointsEarned?: number;
+  verificationStatus?: string;
+  aiConfidence?: number;
+  aiExplanation?: string;
 };
 
 // 아이콘 매핑
@@ -43,25 +46,44 @@ export default function CompletedChallengeScreen({ onBack }: CompletedChallengeS
   const fetchCompletedChallenges = async () => {
     try {
       setIsLoading(true);
+      console.log('완료된 챌린지 조회 시작...');
       const participations = await challengeApi.getMyChallengeParticipations();
+      console.log('전체 참여 내역:', participations);
       
-      // 완료된 챌린지만 필터링
+      // 모든 참여 내역의 상태 확인
+      participations.forEach(participation => {
+        console.log(`챌린지 ${participation.challenge.id} (${participation.challenge.title}):`, {
+          verificationStatus: participation.verificationStatus,
+          activityDate: participation.activityDate,
+          pointsAwarded: participation.pointsAwarded
+        });
+      });
+      
+      // 참여한 모든 챌린지 표시 (상태에 관계없이)
       const completed = participations
-        .filter(participation => 
-          participation.verificationStatus === 'VERIFIED' || 
-          participation.verificationStatus === 'APPROVED'
-        )
+        .filter(participation => {
+          // 참여한 모든 챌린지 표시 (NOT_PARTICIPATED가 아닌 모든 상태)
+          const isParticipated = participation.verificationStatus !== 'NOT_PARTICIPATED';
+          console.log(`챌린지 ${participation.challenge.id} 참여 여부:`, isParticipated, `(상태: ${participation.verificationStatus})`);
+          return isParticipated;
+        })
         .map(participation => {
           const challenge = participation.challenge;
-          return {
+          const localChallenge = {
             ...challenge,
             challengeType: 'image' as const,
             icon: CHALLENGE_ICONS[challenge.code] || CHALLENGE_ICONS.default,
             completedAt: participation.activityDate,
             pointsEarned: participation.pointsAwarded || challenge.points || 0,
+            verificationStatus: participation.verificationStatus,
+            aiConfidence: participation.aiConfidence,
+            aiExplanation: participation.aiExplanation,
           };
+          console.log('참여한 챌린지 변환:', localChallenge);
+          return localChallenge;
         });
 
+      console.log('최종 완료된 챌린지 목록:', completed);
       setCompletedChallenges(completed);
       setTotalEarned(completed.reduce((sum, c) => sum + (c.pointsEarned || 0), 0));
     } catch (error) {
@@ -101,14 +123,13 @@ export default function CompletedChallengeScreen({ onBack }: CompletedChallengeS
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {isLoading ? (
           <View style={styles.loadingContainer}>
-            <Text style={styles.loadingIcon}>🌱</Text>
             <Text style={styles.loadingText}>완료된 챌린지를 불러오는 중...</Text>
           </View>
         ) : completedChallenges.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>🌿</Text>
             <Text style={styles.emptyTitle}>완료된 챌린지가 없어요</Text>
             <Text style={styles.emptyText}>챌린지를 완료하면 여기에 표시됩니다!</Text>
+            <Text style={styles.debugText}>디버깅: 콘솔에서 참여 내역을 확인해보세요</Text>
           </View>
         ) : (
           <View style={styles.historyList}>
@@ -132,11 +153,22 @@ export default function CompletedChallengeScreen({ onBack }: CompletedChallengeS
                 </View>
                 <View style={styles.rewardContainer}>
                   <Text style={styles.rewardText}>
-                    {challenge.isTeamChallenge 
-                      ? `+${challenge.teamScore || 0} 포인트` 
-                      : `+${challenge.pointsEarned} 씨앗`
-                    }
+                    {challenge.verificationStatus === 'APPROVED' ? (
+                      challenge.isTeamChallenge 
+                        ? `+${challenge.teamScore || 0} 포인트` 
+                        : `+${challenge.pointsEarned} 씨앗`
+                    ) : (
+                      challenge.verificationStatus === 'REJECTED' ? '인증 실패' :
+                      challenge.verificationStatus === 'NEEDS_REVIEW' ? '검토 대기' :
+                      challenge.verificationStatus === 'PENDING' ? '검증 중' :
+                      '참여완료'
+                    )}
                   </Text>
+                  {challenge.verificationStatus === 'APPROVED' && (
+                    <View style={styles.successIcon}>
+                      <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+                    </View>
+                  )}
                 </View>
               </View>
             ))}
@@ -270,5 +302,15 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     lineHeight: 20 * SCALE,
+  },
+  debugText: {
+    fontSize: 12 * SCALE,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    marginTop: 8 * SCALE,
+    fontStyle: 'italic',
+  },
+  successIcon: {
+    marginLeft: 8 * SCALE,
   },
 });
