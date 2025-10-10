@@ -3,7 +3,7 @@ import 'dotenv/config';
 export default {
   expo: {
     name: "하나은행",
-    slug: "하나은행",
+    slug: "hanabank",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/hana1q1.png",
