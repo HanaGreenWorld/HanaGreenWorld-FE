@@ -682,6 +682,52 @@ export const teamApi = {
       console.error('내 가입 신청 내역 조회 실패:', error);
       throw error;
     }
+  },
+
+  // 팀장 권한 확인
+  async isTeamLeader(): Promise<boolean> {
+    try {
+      console.log('=== 팀장 권한 확인 시작 ===');
+      const token = await getAuthToken();
+      
+      if (!token) {
+        console.error('인증 토큰이 없습니다');
+        return false;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/teams/my-team`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          console.error('인증 실패 - 토큰이 만료되었거나 유효하지 않음');
+          return false;
+        }
+        if (response.status === 404) {
+          console.log('팀에 속해있지 않습니다');
+          return false;
+        }
+        console.error(`팀 정보 조회 실패: ${response.status}`);
+        return false;
+      }
+
+      const data = await response.json();
+      console.log('팀 정보 데이터:', data);
+      
+      // 팀장인지 확인 (현재 사용자가 팀장인지)
+      const isLeader = data.data?.isLeader || false;
+      console.log('팀장 권한 확인 결과:', isLeader);
+      
+      return isLeader;
+    } catch (error) {
+      console.error('팀장 권한 확인 실패:', error);
+      return false;
+    }
   }
 };
 

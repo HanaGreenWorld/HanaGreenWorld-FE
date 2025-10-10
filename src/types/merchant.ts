@@ -46,7 +46,7 @@ export const MERCHANT_CATEGORIES: Record<string, MerchantCategory> = {
   RECYCLING_STORE: {
     name: 'RECYCLING_STORE',
     displayName: '재활용/제로웨이스트',
-    imageUrl: '/assets/zero_waste.png'
+    imageUrl: '/assets/hana3dIcon/zero_waste.png'
   },
   GREEN_BEAUTY: {
     name: 'GREEN_BEAUTY',

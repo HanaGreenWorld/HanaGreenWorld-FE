@@ -658,6 +658,152 @@ export const fetchWalkingStreak = async (): Promise<number> => {
 };
 
 /**
+ * 환경 임팩트 정보 조회
+ */
+export const fetchEnvironmentalImpact = async (): Promise<{
+  totalCarbonSaved: number;
+  monthlyCarbonSaved: number;
+  totalWaterSaved: number;
+  monthlyWaterSaved: number;
+  totalEnergySaved: number;
+  monthlyEnergySaved: number;
+  totalRecycled: number;
+  monthlyRecycled: number;
+  environmentalGrade: string;
+  environmentalScore: number;
+  impactLevel: string;
+  impactDescription: string;
+  impactIcon: string;
+  impactColor: string;
+  categoryImpacts: Array<{
+    category: string;
+    carbonSaved: number;
+    description: string;
+    icon: string;
+  }>;
+  impactTrends: Array<{
+    date: string;
+    carbonSaved: number;
+    waterSaved: number;
+    energySaved: number;
+  }>;
+  ranking: number;
+  rankingDescription: string;
+  achievements: string[];
+  goals: {
+    nextGrade: string;
+    remainingCarbon: number;
+    progressPercentage: number;
+    description: string;
+  };
+  recommendations: string[];
+  analysisDate: string;
+}> => {
+  try {
+    const token = await getAuthToken();
+    if (!token) {
+      throw new Error('로그인이 필요합니다.');
+    }
+
+    // 현재 로그인한 사용자 ID 가져오기
+    const { getCurrentUserIdFromToken } = await import('./jwtUtils');
+    const userId = await getCurrentUserIdFromToken();
+    if (!userId) {
+      throw new Error('사용자 ID를 가져올 수 없습니다.');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/environmental-impact/${userId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const json = await response.json();
+    return json?.data;
+  } catch (error) {
+    console.error('Failed to fetch environmental impact:', error);
+    throw error;
+  }
+};
+
+/**
+ * 월간 환경 임팩트 정보 조회
+ */
+export const fetchMonthlyEnvironmentalImpact = async (): Promise<{
+  totalCarbonSaved: number;
+  monthlyCarbonSaved: number;
+  totalWaterSaved: number;
+  monthlyWaterSaved: number;
+  totalEnergySaved: number;
+  monthlyEnergySaved: number;
+  totalRecycled: number;
+  monthlyRecycled: number;
+  environmentalGrade: string;
+  environmentalScore: number;
+  impactLevel: string;
+  impactDescription: string;
+  impactIcon: string;
+  impactColor: string;
+  categoryImpacts: Array<{
+    category: string;
+    carbonSaved: number;
+    description: string;
+    icon: string;
+  }>;
+  impactTrends: Array<{
+    date: string;
+    carbonSaved: number;
+    waterSaved: number;
+    energySaved: number;
+  }>;
+  ranking: number;
+  rankingDescription: string;
+  achievements: string[];
+  goals: {
+    nextGrade: string;
+    remainingCarbon: number;
+    progressPercentage: number;
+    description: string;
+  };
+  recommendations: string[];
+  analysisDate: string;
+}> => {
+  try {
+    const token = await getAuthToken();
+    if (!token) {
+      throw new Error('로그인이 필요합니다.');
+    }
+
+    // 현재 로그인한 사용자 ID 가져오기
+    const { getCurrentUserIdFromToken } = await import('./jwtUtils');
+    const userId = await getCurrentUserIdFromToken();
+    if (!userId) {
+      throw new Error('사용자 ID를 가져올 수 없습니다.');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/environmental-impact/${userId}/monthly`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const json = await response.json();
+    return json?.data;
+  } catch (error) {
+    console.error('Failed to fetch monthly environmental impact:', error);
+    throw error;
+  }
+};
+
+/**
  * 최근 걷기 기록 조회 (최대 5개)
  */
 export const fetchRecentWalkingRecords = async (): Promise<WalkingResponse[]> => {
@@ -681,6 +827,44 @@ export const fetchRecentWalkingRecords = async (): Promise<WalkingResponse[]> =>
     return json?.data as WalkingResponse[];
   } catch (error) {
     console.error('Failed to fetch recent walking records:', error);
+    throw error;
+  }
+};
+
+/**
+ * 사용자 비교 통계 정보 조회 (가입일, 평균 대비 비교 등)
+ */
+export const fetchUserComparisonStats = async (): Promise<{
+  registrationDate: string;
+  practiceDays: number;
+  averageComparison: number;
+  monthlyGrowthRate: number;
+  comparisonDescription: string;
+  userRanking: number;
+  totalUsers: number;
+}> => {
+  try {
+    const token = await getAuthToken();
+    
+    // 현재 로그인한 사용자 ID 가져오기
+    const { getCurrentUserIdFromToken } = await import('./jwtUtils');
+    const userId = await getCurrentUserIdFromToken();
+    if (!userId) {
+      throw new Error('사용자 ID를 가져올 수 없습니다.');
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/api/user-stats/${userId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to fetch user comparison stats:', error);
     throw error;
   }
 };

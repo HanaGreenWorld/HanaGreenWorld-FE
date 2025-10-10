@@ -1,12 +1,7 @@
-import { CARD_API_BASE_URL, API_BASE_URL } from './constants';
+import { API_BASE_URL } from './constants';
 import { getAuthToken } from './authUtils';
 
-// React Native 환경에 맞는 카드 API URL 설정
-const getCardApiUrl = () => {
-  return `${CARD_API_BASE_URL}/cards`;
-};
-
-// 하나그린세상 통합 API URL 설정
+// 하나그린세상 통합 API URL 설정 (모든 카드 관련 API는 하나그린세상 서버를 통해)
 const getIntegratedApiUrl = () => {
   return `${API_BASE_URL}/api/integration/cards`;
 };
@@ -20,6 +15,7 @@ export interface UserCardResponse {
   cardType: string;
   cardNumber: string;
   cardNumberMasked: string;
+  cardImageUrl?: string;
   expiryDate: string;
   creditLimit: number;
   currentBenefitType: string;
@@ -124,17 +120,19 @@ export interface CardBenefitResponse {
   isActive: boolean;
 }
 
-// 카드 API URL (플랫폼별 자동 설정)
-const HANACARD_API_URL = getCardApiUrl();
-
-// 사용자 카드 조회
+// 사용자 카드 조회 (하나그린세상 서버 통합 API 사용)
 export const fetchUserCards = async (userId: number): Promise<UserCardResponse[]> => {
   try {
-    const response = await fetch(`${HANACARD_API_URL}/cards/user/${userId}`, {
+    const token = await getAuthToken();
+    if (!token) {
+      throw new Error('로그인이 필요합니다.');
+    }
+
+    const response = await fetch(`${getIntegratedApiUrl()}/${userId}/cards`, {
       method: 'GET',
       headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
-        'X-Internal-Service': 'true',
       },
     });
 
@@ -239,7 +237,7 @@ export const fetchTransactionsByCategory = async (userId: number, category: stri
   }
 };
 
-// 카드 혜택 조회
+// 카드 혜택 조회 (하나그린세상 서버 통합 API 사용)
 export const fetchCardBenefits = async (cardId: number): Promise<CardBenefitResponse[]> => {
   try {
     // cardId가 유효하지 않으면 빈 배열 반환
@@ -248,11 +246,16 @@ export const fetchCardBenefits = async (cardId: number): Promise<CardBenefitResp
       return [];
     }
     
-    const response = await fetch(`${HANACARD_API_URL}/${cardId}/benefits`, {
+    const token = await getAuthToken();
+    if (!token) {
+      throw new Error('로그인이 필요합니다.');
+    }
+    
+    const response = await fetch(`${getIntegratedApiUrl()}/cards/${cardId}/benefits`, {
       method: 'GET',
       headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
-        'X-Internal-Service': 'true',
       },
     });
 
@@ -268,14 +271,19 @@ export const fetchCardBenefits = async (cardId: number): Promise<CardBenefitResp
   }
 };
 
-// 카드 혜택 변경
+// 카드 혜택 변경 (하나그린세상 서버 통합 API 사용)
 export const changeCardBenefit = async (userId: number, cardNumber: string, benefitType: string): Promise<UserCardResponse> => {
   try {
-    const response = await fetch(`${HANACARD_API_URL}/user/${userId}/benefit?cardNumber=${encodeURIComponent(cardNumber)}&benefitType=${encodeURIComponent(benefitType)}`, {
+    const token = await getAuthToken();
+    if (!token) {
+      throw new Error('로그인이 필요합니다.');
+    }
+
+    const response = await fetch(`${getIntegratedApiUrl()}/${userId}/benefit?cardNumber=${encodeURIComponent(cardNumber)}&benefitType=${encodeURIComponent(benefitType)}`, {
       method: 'PUT',
       headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
-        'X-Internal-Service': 'true',
       },
     });
 
@@ -291,14 +299,19 @@ export const changeCardBenefit = async (userId: number, cardNumber: string, bene
   }
 };
 
-// 사용자 카드 혜택 조회 (하나카드 서버에서 조회)
+// 사용자 카드 혜택 조회 (하나그린세상 서버 통합 API 사용)
 export const fetchUserCardBenefits = async (userId: number): Promise<CardBenefitResponse[]> => {
   try {
-    const response = await fetch(`${HANACARD_API_URL}/user/${userId}/benefits`, {
+    const token = await getAuthToken();
+    if (!token) {
+      throw new Error('로그인이 필요합니다.');
+    }
+
+    const response = await fetch(`${getIntegratedApiUrl()}/${userId}/benefits`, {
       method: 'GET',
       headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
-        'X-Internal-Service': 'true',
       },
     });
 
@@ -336,14 +349,19 @@ export const fetchEcoConsumptionAnalysis = async (userId: number): Promise<EcoCo
   }
 };
 
-// 친환경 가맹점 혜택 조회 (하나카드 서버에서 조회)
+// 친환경 가맹점 혜택 조회 (하나그린세상 서버 통합 API 사용)
 export const fetchEcoBenefits = async (userId: number): Promise<any> => {
   try {
-    const response = await fetch(`${HANACARD_API_URL}/user/${userId}/eco-benefits`, {
+    const token = await getAuthToken();
+    if (!token) {
+      throw new Error('로그인이 필요합니다.');
+    }
+
+    const response = await fetch(`${getIntegratedApiUrl()}/${userId}/eco-benefits`, {
       method: 'GET',
       headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
-        'X-Internal-Service': 'true',
       },
     });
 
@@ -359,14 +377,19 @@ export const fetchEcoBenefits = async (userId: number): Promise<any> => {
   }
 };
 
-// 카드 혜택 패키지 조회 (하나카드 서버에서 조회)
+// 카드 혜택 패키지 조회 (하나그린세상 서버 통합 API 사용)
 export const fetchCardBenefitPackages = async (userId: number): Promise<any> => {
   try {
-    const response = await fetch(`${HANACARD_API_URL}/user/${userId}/benefit-packages`, {
+    const token = await getAuthToken();
+    if (!token) {
+      throw new Error('로그인이 필요합니다.');
+    }
+
+    const response = await fetch(`${getIntegratedApiUrl()}/${userId}/benefit-packages`, {
       method: 'GET',
       headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
-        'X-Internal-Service': 'true',
       },
     });
 
@@ -382,14 +405,19 @@ export const fetchCardBenefitPackages = async (userId: number): Promise<any> => 
   }
 };
 
-// 혜택 패키지 변경 (하나카드 서버에서 변경)
+// 혜택 패키지 변경 (하나그린세상 서버 통합 API 사용)
 export const updateUserBenefitPackage = async (userId: number, packageName: string): Promise<any> => {
   try {
-    const response = await fetch(`${HANACARD_API_URL}/user/${userId}/benefit-packages`, {
+    const token = await getAuthToken();
+    if (!token) {
+      throw new Error('로그인이 필요합니다.');
+    }
+
+    const response = await fetch(`${getIntegratedApiUrl()}/${userId}/benefit-packages`, {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
-        'X-Internal-Service': 'true',
       },
       body: JSON.stringify({ packageName }),
     });
@@ -406,14 +434,19 @@ export const updateUserBenefitPackage = async (userId: number, packageName: stri
   }
 };
 
-// 태그별 거래내역 조회
+// 태그별 거래내역 조회 (하나그린세상 서버 통합 API 사용)
 export const fetchTransactionsByTag = async (userId: number, tag: string): Promise<CardTransactionResponse[]> => {
   try {
-    const response = await fetch(`${HANACARD_API_URL}/user/${userId}/transactions/tag/${encodeURIComponent(tag)}`, {
+    const token = await getAuthToken();
+    if (!token) {
+      throw new Error('로그인이 필요합니다.');
+    }
+
+    const response = await fetch(`${getIntegratedApiUrl()}/${userId}/transactions/tag/${encodeURIComponent(tag)}`, {
       method: 'GET',
       headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
-        'X-Internal-Service': 'true',
       },
     });
 

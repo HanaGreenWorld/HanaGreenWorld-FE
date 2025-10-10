@@ -44,6 +44,6 @@ export const PointCategoryDisplayName: Record<PointCategory, string> = {
   [PointCategory.CHALLENGE]: '챌린지',
   [PointCategory.RECYCLING]: '재활용',
   [PointCategory.ECO_MERCHANT]: '친환경 가맹점',
-  [PointCategory.ELECTRONIC_RECEIPT]: '전자영수증',
+  [PointCategory.ELECTRONIC_RECEIPT]: '전자확인증',
   [PointCategory.OTHER]: '기타'
 };

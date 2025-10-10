@@ -10,6 +10,7 @@ export interface Challenge {
   points?: number; // POINTS 정책일 때만 사용
   teamScore?: number; // TEAM_SCORE 정책일 때만 사용
   isTeamChallenge: boolean;
+  isLeaderOnly: boolean; // 팀장만 참여 가능한 챌린지
   isActive: boolean;
   // 프론트엔드에서 추가로 필요한 필드들 (백엔드에는 없지만 UI에서 사용)
   iconUrl?: string;
@@ -42,6 +43,10 @@ export interface ChallengeRecord {
   verifiedAt?: string;
   pointsAwarded?: number;
   teamScoreAwarded?: number;
+  // AI 검증 관련 정보
+  aiConfidence?: number;
+  aiExplanation?: string;
+  aiDetectedItems?: string;
 }
 
 export interface ChallengeParticipationResponse {
@@ -113,11 +118,13 @@ export const challengeApi = {
     try {
       // JWT 토큰 가져오기
       const token = await getAuthToken();
+      console.log('🔐 API 호출 - 토큰 존재:', !!token);
       
       if (!token) {
         throw new Error('인증 토큰이 없습니다. 다시 로그인해주세요.');
       }
 
+      console.log('📡 API 호출 시작: /challenges/my-participations');
       const response = await fetch(`${API_BASE_URL}/challenges/my-participations`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -125,14 +132,37 @@ export const challengeApi = {
         },
       });
       
+      console.log('📡 API 응답 상태:', response.status, response.statusText);
+      
       if (response.status === 401) {
         throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
       }
       
       if (!response.ok) {
-        throw new Error('Failed to fetch challenge participations');
+        const errorText = await response.text();
+        console.error('📡 API 에러 응답:', errorText);
+        throw new Error(`Failed to fetch challenge participations: ${response.status}`);
       }
+      
       const data = await response.json();
+      console.log('📡 API 응답 데이터:', data);
+      console.log('📡 참여 내역 개수:', data.data?.length || 0);
+      
+      // 각 참여 내역의 상세 정보 로깅
+      if (data.data && data.data.length > 0) {
+        data.data.forEach((record: any, index: number) => {
+          console.log(`📡 참여 내역 ${index + 1}:`, {
+            challengeId: record.challenge?.id,
+            challengeTitle: record.challenge?.title,
+            verificationStatus: record.verificationStatus,
+            pointsAwarded: record.pointsAwarded,
+            activityDate: record.activityDate
+          });
+        });
+      } else {
+        console.log('📡 ⚠️ API에서 참여 내역이 없습니다.');
+      }
+      
       return data.data || [];
     } catch (error) {
       console.error('Error fetching challenge participations:', error);
@@ -201,6 +231,44 @@ export const challengeApi = {
     } catch (error) {
       console.error('Error saving challenge activity:', error);
       throw error; // 에러를 다시 던져서 호출하는 곳에서 처리할 수 있게 함
+    }
+  },
+
+  // AI 검증 시작
+  startAiVerification: async (challengeId: number): Promise<ChallengeParticipationResponse | null> => {
+    try {
+      // JWT 토큰 가져오기
+      const token = await getAuthToken();
+      
+      if (!token) {
+        throw new Error('인증 토큰이 없습니다. 다시 로그인해주세요.');
+      }
+
+      console.log('Starting AI verification for challenge:', challengeId);
+
+      const response = await fetch(`${API_BASE_URL}/challenges/${challengeId}/verify`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.status === 401) {
+        throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('AI verification response:', data);
+      return data.data || null;
+    } catch (error) {
+      console.error('Error starting AI verification:', error);
+      throw error;
     }
   },
   };

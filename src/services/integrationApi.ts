@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CARD_API_BASE_URL, API_BASE_URL } from '../utils/constants';
+import { API_BASE_URL } from '../utils/constants';
 import { getCurrentUserIdFromToken } from '../utils/jwtUtils';
 
 export interface HanamoneyInfo {
@@ -224,7 +224,7 @@ class IntegrationApiService {
     }
     
     const response = await this.makeAuthenticatedRequest(
-      `${CARD_API_BASE_URL}/api/integration/hanamoney-info`,
+      `${API_BASE_URL}/api/v1/integration/hanamoney-info`,
       {
         method: 'POST',
         body: JSON.stringify({
@@ -256,11 +256,11 @@ class IntegrationApiService {
       throw new Error(`보안 위반: 다른 사용자의 데이터에 접근하려고 시도했습니다. (JWT: ${currentUserId}, 요청: ${memberId})`);
     }
     
-    console.log('💳 API URL:', `${CARD_API_BASE_URL}/api/integration/cards/${memberId}?consent=true`);
+    console.log('💳 API URL:', `${API_BASE_URL}/api/v1/integration/cards/${memberId}?consent=true`);
     
     try {
       const response = await this.makeAuthenticatedRequest(
-        `${CARD_API_BASE_URL}/api/integration/cards/${memberId}?consent=true`
+        `${API_BASE_URL}/api/v1/integration/cards/${memberId}?consent=true`
       );
 
       console.log('💳 카드 목록 응답 상태:', response.status);
@@ -438,7 +438,7 @@ class IntegrationApiService {
 
     try {
       const response = await this.makeAuthenticatedRequest(
-        `${CARD_API_BASE_URL}/api/integration/customer-info`,
+        `${API_BASE_URL}/api/v1/integration/customer-info`,
         {
           method: 'POST',
           body: JSON.stringify({
