@@ -1,21 +1,32 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { fetchUserStats } from '../utils/ecoSeedApi';
+import { isLoggedIn } from '../utils/authUtils';
 import { UserStats } from '../types';
 
-export function useUserStats() {
+export const useUserStats = () => {
   const [userStats, setUserStats] = useState<UserStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchStats = async () => {
+  const getUserStats = useCallback(async () => {
     try {
+      // 로그인 상태 확인
+      const loggedIn = await isLoggedIn();
+      if (!loggedIn) {
+        console.log('로그인이 필요합니다. API 호출을 건너뜁니다.');
+        return;
+      }
+
       setLoading(true);
-      const stats = await fetchUserStats();
-      setUserStats(stats);
       setError(null);
+      const data = await fetchUserStats();
+      setUserStats(data);
+      return data;
     } catch (err) {
-      console.error('Failed to fetch user stats:', err);
-      setError('사용자 통계 정보를 불러오는데 실패했습니다.');
+      const errorMessage = err instanceof Error ? err.message : '사용자 통계 조회에 실패했습니다.';
+      setError(errorMessage);
+      console.error('사용자 통계 조회 실패:', err);
+      
       // 기본값 설정
       setUserStats({
         totalPoints: 0,
@@ -27,7 +38,7 @@ export function useUserStats() {
         currentLevel: {
           id: 'beginner',
           name: '친환경 새내기',
-          description: '🌱 환경 보호 여정을 시작했어요!',
+          description: '환경 보호의 첫 걸음을 내딛는 단계',
           requiredPoints: 0,
           icon: '🌱',
           color: '#10B981'
@@ -35,31 +46,27 @@ export function useUserStats() {
         nextLevel: {
           id: 'intermediate',
           name: '친환경 실천가',
-          description: '🌿 환경 보호를 실천하고 있어요!',
-          requiredPoints: 20000,
+          description: '환경 보호를 실천하는 단계',
+          requiredPoints: 1000,
           icon: '🌿',
           color: '#059669'
         },
         progressToNextLevel: 0,
-        pointsToNextLevel: 20000
+        pointsToNextLevel: 1000
       });
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchStats();
   }, []);
 
-  const refreshStats = () => {
-    fetchStats();
-  };
+  useEffect(() => {
+    getUserStats();
+  }, [getUserStats]);
 
   return {
     userStats,
     loading,
     error,
-    refreshStats,
+    refetch: getUserStats
   };
-}
+};
