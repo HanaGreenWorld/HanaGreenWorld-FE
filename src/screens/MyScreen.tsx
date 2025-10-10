@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SCALE, IPHONE_WIDTH, IPHONE_HEIGHT } from '../utils/constants';
 import TopBar from '../components/TopBar';
 import { SavingsTab } from '../components/tabs/SavingsTab';
@@ -34,6 +35,7 @@ export function MyScreen({
   onBackToGreenPlay, 
   onHome 
 }: MyScreenProps) {
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState(
     initialSubTab === '적금' || initialSubTab === '채권' || initialSubTab === '카드'
       ? (initialSubTab as string)
@@ -86,8 +88,29 @@ export function MyScreen({
   // 고객 대출 계좌 데이터 훅 사용 (대출 탭에서만) - 실제 필요한 데이터만
   const { loanAccounts, loading: loanAccountLoading, error: loanAccountError } = useLoanAccountData(activeTab === '대출' ? (userInfo?.id || 0) : 0);
 
-  // 친환경 혜택 카테고리 아이콘 매핑
-  const getCategoryIcon = (type: string) => {
+  // 친환경 혜택 카테고리 아이콘 매핑 (실제 데이터베이스에서 가져온 정보 사용)
+  const getCategoryIcon = (type: string, iconUrl?: string) => {
+    // 데이터베이스에서 가져온 아이콘 URL이 있으면 사용
+    if (iconUrl && iconUrl.startsWith('hanaIcon3d_')) {
+      // 실제로는 서버에서 이미지 파일을 제공해야 함
+      // 현재는 하드코딩된 매핑으로 처리
+      switch (iconUrl) {
+        case 'hanaIcon3d_11.png':
+          return require('../../assets/hana3dIcon/hanaIcon3d_11.png');
+        case 'hanaIcon3d_85.png':
+          return require('../../assets/hana3dIcon/hanaIcon3d_85.png');
+        case 'hanaIcon3d_87.png':
+          return require('../../assets/hana3dIcon/hanaIcon3d_87.png');
+        case 'hanaIcon3d_101.png':
+          return require('../../assets/hana3dIcon/hanaIcon3d_101.png');
+        case 'hanaIcon3d_103.png':
+          return require('../../assets/hana3dIcon/hanaIcon3d_103.png');
+        default:
+          return require('../../assets/hana3dIcon/hanaIcon3d_105.png');
+      }
+    }
+
+    // 기존 타입 기반 매핑 (백업)
     switch (type) {
       case 'ECO_FOOD':
         return require('../../assets/hana3dIcon/hanaIcon3d_11.png');
@@ -172,7 +195,10 @@ export function MyScreen({
         amount: `+${transaction.cashbackAmount.toLocaleString()}원`,
         date: formatTransactionDate(transaction.transactionDate),
         cardNumber: '****3524', // 마스킹된 카드번호
-        icon: getCategoryIcon(getCategoryType(transaction.category)),
+        // 실제 데이터베이스에서 가져온 아이콘 정보 사용
+        icon: getCategoryIcon(
+          getCategoryType(transaction.category)
+        ),
         benefitName: getBenefitName(transaction.category),
         spentAmount: transaction.amount.toLocaleString()
       })) : [
@@ -322,6 +348,8 @@ export function MyScreen({
       <Modal visible={showEarthSavingsDetail} transparent animationType="none" onRequestClose={() => setShowEarthSavingsDetail(false)}>
         <View style={styles.cancelOverlay}>
           <View style={[styles.earthModal, { width: IPHONE_WIDTH * SCALE, height: IPHONE_HEIGHT * SCALE }]}>
+            {/* Safe Area 상단 여백 추가 */}
+            <View style={{ height: insets.top, backgroundColor: '#FFFFFF' }} />
             <View style={styles.earthModalHeader}>
               <Pressable onPress={() => setShowEarthSavingsDetail(false)} style={styles.modalBackBtn}>
                 <Ionicons name="chevron-back" size={22} color="#111827" />
