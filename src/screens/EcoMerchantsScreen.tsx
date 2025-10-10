@@ -6,6 +6,7 @@ import { SCALE, COLORS, IPHONE_WIDTH, KAKAO_MAP_API_KEY } from '../utils/constan
 import { EcoMerchant, CATEGORY_EMOJIS } from '../types/merchant';
 import { searchNearbyMerchants, searchMerchantsByCategory, searchMerchantsByName } from '../utils/merchantApi';
 import { KakaoMap } from '../components/KakaoMap';
+import TopBar from '../components/TopBar';
 
 interface EcoMerchantsScreenProps {
   onBack?: () => void;
@@ -239,13 +240,7 @@ export function EcoMerchantsScreen({ onBack }: EcoMerchantsScreenProps) {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <Pressable style={styles.headerIcon} onPress={onBack}>
-          <Ionicons name="chevron-back" size={22} color="#111827" />
-        </Pressable>
-        <Text style={styles.headerTitle}>친환경 가맹점 확인하기</Text>
-        <View style={styles.headerIcon} />
-      </View>
+      <TopBar title="친환경 가맹점 확인하기" onBack={onBack} />
 
       <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
         {/* Map Card */}

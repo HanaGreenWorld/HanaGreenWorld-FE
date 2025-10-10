@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Image, Modal, Linking, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SCALE, COLORS, IPHONE_WIDTH } from '../utils/constants';
+import TopBar from '../components/TopBar';
 import { useEcoSeeds } from '../hooks/useEcoSeeds';
 import { 
   submitWalkingSteps, 
@@ -200,13 +201,7 @@ export default function WalkingScreen({ onBack, onAwardSeeds }: WalkingScreenPro
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={onBack} style={styles.headerBtn}>
-          <Ionicons name="chevron-back" size={20 * SCALE} color="#111827" />
-        </Pressable>
-        <Text style={styles.headerTitle}>걷기</Text>
-        <View style={{ width: 28 }} />
-      </View>
+      <TopBar title="걷기" onBack={onBack} />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* 연결 카드 */}

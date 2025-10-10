@@ -118,7 +118,7 @@ export function GreenSavingsScreen({ onNavigateBack, onNavigateToSignup }: Green
             <Text style={styles.featureDescription}>하나카드로 대중교통 이용하면{'\n'}추가 우대금리 혜택이 있어요.</Text>
           </View>
           <View style={styles.featureImageContainer}>
-            <Image source={require('../../assets/bus.png')} style={styles.featureImage} />
+            <Image source={require('../../assets/hana3dIcon/bus.png')} style={styles.featureImage} />
           </View>
         </View>
 
