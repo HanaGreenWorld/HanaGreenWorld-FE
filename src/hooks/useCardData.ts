@@ -71,6 +71,7 @@ export const useCardData = (userId: number) => {
           expiryDate: card.expiryDate,
           cardNumber: card.cardNumber,
           cardNumberMasked: card.cardNumber.replace(/(\d{4})(\d{4})(\d{4})(\d{4})/, '$1-****-****-$4'),
+          cardImageUrl: '', // 카드 이미지 URL (기본값)
           currentBenefitType: '기본',
           isActive: card.cardStatus === '활성',
           createdAt: card.issueDate,
@@ -152,6 +153,7 @@ export const useCardData = (userId: number) => {
         expiryDate: card.expiryDate,
         cardNumber: card.cardNumber,
         cardNumberMasked: card.cardNumber.replace(/(\d{4})(\d{4})(\d{4})(\d{4})/, '$1-****-****-$4'),
+        cardImageUrl: '', // 카드 이미지 URL (기본값)
         currentBenefitType: '기본',
         isActive: card.cardStatus === '활성',
         createdAt: card.issueDate,

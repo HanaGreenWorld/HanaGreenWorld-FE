@@ -83,7 +83,7 @@ export function useChat(transport: ChatTransport | null, teamId: string | null, 
     
     try {
       console.log('🎯 transport.send 호출:', teamId, text);
-      transport.send(teamId, text, userId);
+      transport.send(teamId, text);
     } catch (error) {
       console.error('useChat: 메시지 전송 실패:', error);
     }

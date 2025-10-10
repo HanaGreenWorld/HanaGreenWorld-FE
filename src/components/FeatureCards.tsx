@@ -1,16 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, Animated, Image, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SCALE, COLORS } from '../utils/constants';
+import { useEnvironmentalImpact } from '../hooks/useEnvironmentalImpact';
+import { useEcoSeeds } from '../hooks/useEcoSeeds';
+import { useUserComparisonStats } from '../hooks/useUserComparisonStats';
 
 export function FeatureCards() {
   const [activeTab, setActiveTab] = useState<'month' | 'total'>('month');
   const [activeCard, setActiveCard] = useState<'financial' | 'carbon'>('financial');
+  const { environmentalImpact, monthlyEnvironmentalImpact, loading: impactLoading } = useEnvironmentalImpact();
+  const { ecoSeedInfo, loading: ecoSeedsLoading } = useEcoSeeds();
+  const { userStats, loading: userStatsLoading } = useUserComparisonStats();
 
+  // 디버깅을 위한 로그
+  console.log('🔍 FeatureCards - environmentalImpact:', environmentalImpact);
+  console.log('🔍 FeatureCards - monthlyEnvironmentalImpact:', monthlyEnvironmentalImpact);
+  console.log('🔍 FeatureCards - ecoSeedInfo:', ecoSeedInfo);
+  console.log('🔍 FeatureCards - userStats:', userStats);
+
+  // 원큐씨앗 데이터를 API에서 가져온 데이터로 업데이트
   const financialData = {
     month: {
-      value: '75개',
-      percentage: '상위 35%',
+      // 월간 원큐씨앗은 현재 사용 가능한 원큐씨앗으로 표시 (실제로는 월간 데이터가 없음)
+      value: ecoSeedInfo?.currentSeeds ? `${ecoSeedInfo.currentSeeds.toLocaleString()}개` : '75개',
+      percentage: userStats?.averageComparison ? `상위 ${userStats.averageComparison.toFixed(1)}% 사용자` : '상위 30% 사용자',
       trend: '+12%',
       image: require('../../assets/sprout.png'),
       color: '#10B981',
@@ -18,9 +32,9 @@ export function FeatureCards() {
       icon: '🌱',
     },
     total: {
-      value: '5,100개',
-      percentage: '상위 42%',
-      trend: '128일째',
+      value: ecoSeedInfo?.totalSeeds ? `${ecoSeedInfo.totalSeeds.toLocaleString()}개` : '5,100개',
+      percentage: userStats?.averageComparison ? `상위 ${userStats.averageComparison.toFixed(1)}% 사용자` : '상위 30% 사용자',
+      trend: userStats?.practiceDays ? `${userStats.practiceDays}일째` : '128일째',
       image: require('../../assets/sprout.png'),
       color: '#10B981',
       bgGradient: ['#ECFDF5', '#F0FDF4'],
@@ -28,20 +42,32 @@ export function FeatureCards() {
     }
   };
 
+  // 환경 임팩트 데이터를 API에서 가져온 데이터로 업데이트
+  const getCurrentImpact = () => {
+    if (activeTab === 'month' && monthlyEnvironmentalImpact) {
+      return monthlyEnvironmentalImpact;
+    }
+    return environmentalImpact;
+  };
+
+  const currentImpact = getCurrentImpact();
+
   const carbonData = {
     month: {
-      value: '2.3kg',
-      percentage: '상위 28%',
-      trend: '+8%',
+      value: currentImpact?.monthlyCarbonSaved !== undefined && currentImpact.monthlyCarbonSaved >= 0 
+        ? `${currentImpact.monthlyCarbonSaved.toFixed(1)}kg` 
+        : currentImpact?.monthlyCarbonSaved === -1 ? '-' : '2.3kg',
+      percentage: userStats?.averageComparison ? `상위 ${userStats.averageComparison.toFixed(1)}% 사용자` : '상위 30% 사용자',
+      trend: userStats?.monthlyGrowthRate !== undefined ? `${userStats.monthlyGrowthRate >= 0 ? '+' : ''}${userStats.monthlyGrowthRate.toFixed(1)}%` : '+8%',
       image: require('../../assets/hana3dIcon/hanaIcon3d_4_17.png'),
       color: '#3B82F6',
       bgGradient: ['#EFF6FF', '#F0F9FF'],
       icon: '🌍',
     },
     total: {
-      value: '8.7kg',
-      percentage: '상위 31%',
-      trend: '128일째',
+      value: currentImpact?.totalCarbonSaved ? `${currentImpact.totalCarbonSaved.toFixed(1)}kg` : '8.7kg',
+      percentage: userStats?.averageComparison ? `상위 ${userStats.averageComparison.toFixed(1)}% 사용자` : '상위 30% 사용자',
+      trend: userStats?.practiceDays ? `${userStats.practiceDays}일째` : '128일째',
       image: require('../../assets/hana3dIcon/hanaIcon3d_4_17.png'),
       color: '#3B82F6',
       bgGradient: ['#EFF6FF', '#F0F9FF'],
@@ -135,7 +161,7 @@ export function FeatureCards() {
             
             <View style={styles.statCard}>
               <Text style={styles.statCardLabel}>
-                {activeTab === 'month' ? '증감률' : '연속 실천'}
+                {activeTab === 'month' ? '증감률' : '실천일'}
               </Text>
               <Text style={[styles.statCardValue, { color: currentData.color }]}>
                 {currentData.trend}
@@ -143,6 +169,7 @@ export function FeatureCards() {
               <View style={[styles.statCardIndicator, { backgroundColor: currentData.color }]} />
             </View>
           </View>
+
         </View>
 
         {/* 네비게이션 */}
@@ -401,5 +428,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+
 
 });

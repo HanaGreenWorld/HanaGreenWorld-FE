@@ -163,14 +163,6 @@ export default function QuizScreen({ onBack, onQuizCompleted, quizCompleted = fa
 
   return (
     <View style={styles.container}>
-      {/* Status Bar */}
-      <View style={styles.statusBar}>
-        <Text style={styles.statusBarText}>2:03</Text>
-        <View style={styles.statusBarRight}>
-          <Text style={styles.statusBarText}>LTE</Text>
-          <View style={styles.battery} />
-        </View>
-      </View>
 
       {/* Header */}
       <View style={styles.header}>
@@ -227,7 +219,7 @@ export default function QuizScreen({ onBack, onQuizCompleted, quizCompleted = fa
                 Q. {todayResult.quiz.question}
               </Text>
               <View style={styles.answerOptions}>
-                {parseOptions(todayResult.quiz.options).map((option, index) => (
+                {(todayResult.quiz.options as string[]).map((option, index) => (
                   <TouchableOpacity
                     key={index}
                     style={[
@@ -265,7 +257,7 @@ export default function QuizScreen({ onBack, onQuizCompleted, quizCompleted = fa
                 Q. {quiz.question}
               </Text>
               <View style={styles.answerOptions}>
-                {parseOptions(quiz.options).map((option, index) => (
+                {(quiz.options as string[]).map((option, index) => (
                   <TouchableOpacity
                     key={index}
                     style={[

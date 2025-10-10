@@ -1,18 +1,18 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import * as Ionicons from '@expo/vector-icons';
 import { SCALE } from '../utils/constants';
 
 interface TipBubbleProps {
   text: string;
-  icon?: keyof typeof Ionicons.glyphMap;
+  icon?: string;
   iconColor?: string;
 }
 
 export default function TipBubble({ text, icon = 'chatbubble-ellipses-outline', iconColor = '#F59E0B' }: TipBubbleProps) {
   return (
     <View style={styles.container}>
-      <Ionicons name={icon} size={16 * SCALE} color={iconColor} style={{ marginRight: 8 * SCALE }} />
+      <Ionicons.Ionicons name={icon as any} size={16 * SCALE} color={iconColor} style={{ marginRight: 8 * SCALE }} />
       <Text style={styles.text}>{text}</Text>
     </View>
   );
