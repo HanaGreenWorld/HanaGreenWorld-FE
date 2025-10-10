@@ -212,7 +212,56 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 export const useApp = (): AppContextType => {
   const context = useContext(AppContext);
   if (context === undefined) {
-    throw new Error('useApp must be used within an AppProvider');
+    console.error('useApp must be used within an AppProvider');
+    // 임시로 기본값 반환하여 앱 크래시 방지
+    return {
+      isLoggedIn: false,
+      isInitialized: false,
+      activeTab: 'mockhome',
+      showHistory: false,
+      showExpiredInsurance: false,
+      showSeedConversion: false,
+      showQuiz: false,
+      showGreenSavings: false,
+      showEcoMerchants: false,
+      showProductSignup: false,
+      showWalking: false,
+      showEcoChallenge: false,
+      showChallengeHistory: false,
+      showSeedHistory: false,
+      showElectronicReceipt: false,
+      showCarbonGuide: false,
+      showEcoReport: false,
+      quizCompleted: false,
+      selectedQuizAnswer: null,
+      expiredInsuranceFromTab: 'my',
+      expiredInsuranceSubTab: '자산',
+      ecoReportDetail: null,
+      setLoggedIn: () => {},
+      logout: async () => {},
+      setActiveTab: () => {},
+      setShowHistory: () => {},
+      setShowExpiredInsurance: () => {},
+      setShowSeedConversion: () => {},
+      setShowQuiz: () => {},
+      setShowGreenSavings: () => {},
+      setShowEcoMerchants: () => {},
+      setShowProductSignup: () => {},
+      setShowWalking: () => {},
+      setShowEcoChallenge: () => {},
+      setShowChallengeHistory: () => {},
+      setShowSeedHistory: () => {},
+      setShowElectronicReceipt: () => {},
+      setShowCarbonGuide: () => {},
+      setShowEcoReport: () => {},
+      setQuizCompleted: () => {},
+      setSelectedQuizAnswer: () => {},
+      setExpiredInsuranceFromTab: () => {},
+      setExpiredInsuranceSubTab: () => {},
+      setEcoReportDetail: () => {},
+      openEcoMerchants: () => {},
+      openEcoReport: () => {},
+    };
   }
   return context;
 };

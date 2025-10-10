@@ -11,7 +11,7 @@ import {
 export default function App() {
   return (
     <AppProvider>
-      <PhoneFrame>
+      <PhoneFrame backgroundColor="#FFF"> {/* SafeArea 색깔 지정 */}
         <GlobalActionProvider />
         <ScreenRenderer />
         <TabVisibilityController />
