@@ -20,17 +20,8 @@ export const scaleSize = (size: number) => size * SCALE;
 export const scaleWidth = (width: number) => width * (SCREEN_WIDTH / BASE_WIDTH);
 export const scaleHeight = (height: number) => height * (SCREEN_HEIGHT / BASE_HEIGHT);
 
-// Safe Area 정보 (동적 계산)
-export const SAFE_AREA_INSETS = {
-  top: Platform.OS === 'ios' ? (height > 800 ? 47 : 20) : 0,
-  bottom: Platform.OS === 'ios' ? (height > 800 ? 34 : 0) : 0,
-  left: 0,
-  right: 0,
-};
-
-// 실제 사용 가능한 화면 크기 계산 (반응형)
-export const USABLE_WIDTH = SCREEN_WIDTH - SAFE_AREA_INSETS.left - SAFE_AREA_INSETS.right;
-export const USABLE_HEIGHT = SCREEN_HEIGHT - SAFE_AREA_INSETS.top - SAFE_AREA_INSETS.bottom;
+// Safe Area 정보는 이제 useSafeAreaInsets() 훅을 사용하여 동적으로 처리
+// 하드코딩된 값 제거 - 각 컴포넌트에서 useSafeAreaInsets() 사용 권장
 
 // 기존 호환성을 위한 상수 (deprecated)
 export const IPHONE_WIDTH = SCREEN_WIDTH;
@@ -229,43 +220,58 @@ export const FALLBACK_RECOMMENDED_SAVINGS = [
 // 카카오 지도 API 설정
 export const KAKAO_MAP_API_KEY = ENV_KAKAO_MAP_API_KEY;
 
+// 카카오지도 API 키 검증 함수
+export const isKakaoMapApiKeyValid = (): boolean => {
+  const apiKey = KAKAO_MAP_API_KEY;
+  return Boolean(apiKey && 
+         apiKey !== 'YOUR_KAKAO_MAP_API_KEY_HERE' && 
+         apiKey !== 'undefined' && 
+         apiKey.length > 10);
+};
+
 // API 설정 - 플랫폼별 최적화
 export const API_BASE_URL = (() => {
-  // Mac의 실제 IP 주소 (현재: 192.168.123.7)
-  const MAC_IP = '192.168.123.11';
+  // 서버 IP 주소 (현재: 7.7.7.39)
+  const SERVER_IP = '172.30.112.228';
   
   if (Platform.OS === 'android') {
-    // 안드로이드 에뮬레이터는 10.0.2.2를 사용 (호스트 머신의 localhost)
+    // 안드로이드 에뮬레이터는 실제 IP 주소를 사용
     // 하나그린세상 서버 (로그인, 챌린지 등)
-    return 'http://10.0.2.2:8080';
+    return `http://${SERVER_IP}:8080`;
   }
   
   if (Platform.OS === 'ios') {
-    // iPhone은 Mac의 실제 IP 사용
-    return `http://${MAC_IP}:8080`;
+    // iOS 에뮬레이터는 localhost 사용
+    return 'http://localhost:8080';
   }
   
   // 웹 환경
   return 'http://localhost:8080';
 })();
 
-// 하나카드 서버 URL (카드 관련 API용)
-export const CARD_API_BASE_URL = (() => {
-  const MAC_IP = '192.168.123.11';
-  
-  if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:8083';
-  }
-  
-  if (Platform.OS === 'ios') {
-    return `http://${MAC_IP}:8083`;
-  }
-  
-  return 'http://localhost:8083';
-})();
+// 하나카드 서버는 백엔드에서만 접근
+// 프론트엔드는 하나그린세상 서버(API_BASE_URL)를 통해서만 데이터 접근
+// CARD_API_BASE_URL 제거 - 잘못된 아키텍처
 
 // 개발 중 확인용 로그
 if (__DEV__) {
   // eslint-disable-next-line no-console
   console.log('API_BASE_URL =', API_BASE_URL);
 }
+
+// 카드 이미지 매핑 함수
+export const getCardImageSource = (imageUrl?: string | null) => {
+  if (!imageUrl) {
+    return require('../../assets/hana_greenlife_card.png');
+  }
+
+  // 이미지 파일명 매핑
+  const imageMap: { [key: string]: any } = {
+    'hana_greenlife_card.png': require('../../assets/hana_greenlife_card.png'),
+    'hana_card.png': require('../../assets/hana_card.png'),
+    'hana_green_card.png': require('../../assets/hana_green_card.png'),
+    'hana_1q_card.png': require('../../assets/hana_1q_card.png'),
+  };
+
+  return imageMap[imageUrl] || require('../../assets/hana_greenlife_card.png');
+};
