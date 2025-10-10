@@ -7,7 +7,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleDisplayName</key>
-    <string>HanaGreenPlusWeb</string>
+    <string>HanaGreenWorld</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -27,13 +27,13 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>com.jimpark.hanagreenplusweb</string>
+          <string>com.jimpark.hanagreenworld</string>
         </array>
       </dict>
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>exp+hanagreenplusweb</string>
+          <string>exp+hanagreenworld</string>
         </array>
       </dict>
     </array>

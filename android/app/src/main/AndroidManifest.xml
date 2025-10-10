@@ -29,7 +29,7 @@
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
-        <data android:scheme="exp+hanagreenplusweb"/>
+        <data android:scheme="exp+hanagreenworld"/>
       </intent-filter>
     </activity>
   </application>

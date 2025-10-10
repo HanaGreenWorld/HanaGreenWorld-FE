@@ -1,4 +1,4 @@
-package com.jimpark.hanagreenplusweb
+package com.jimpark.hanagreenworld
 
 import android.app.Application
 import android.content.res.Configuration
