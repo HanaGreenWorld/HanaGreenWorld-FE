@@ -9,11 +9,11 @@ export default {
     icon: "./assets/hana1q1.png",
     userInterfaceStyle: "light",
     newArchEnabled: true,
-    splash: {
-      image: "./assets/hana1q2.png",
-      resizeMode: "contain",
-      backgroundColor: "#ffffff"
-    },
+    // splash: {
+    //   image: "./assets/hana1q2.png",
+    //   resizeMode: "contain",
+    //   backgroundColor: "#ffffff"
+    // },
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.jimpark.hanagreenworld",
