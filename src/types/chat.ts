@@ -10,6 +10,7 @@ export type ChatMessage = {
   senderId: string;
   senderName?: string;
   text: string;
+  messageType?: string; // TEXT, IMAGE, FILE, SYSTEM
   createdAt: number; // epoch ms
 };
 
