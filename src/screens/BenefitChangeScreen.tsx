@@ -30,7 +30,6 @@ export function BenefitChangeScreen({ visible, onClose, onBenefitSelect }: Benef
   // 사용자 정보 가져오기
   const { userInfo } = useUser();
 
-  // 카드 데이터 훅 사용
   const { 
     benefitPackages,
     currentBenefitPackage,
@@ -43,18 +42,31 @@ export function BenefitChangeScreen({ visible, onClose, onBenefitSelect }: Benef
 
   // API 데이터를 기반으로 혜택 목록 생성
   const benefits = benefitPackages && benefitPackages.packages 
-    ? benefitPackages.packages.map((pkg: any) => ({
-        id: pkg.packageName.includes('올인원') ? 'all_green_life' : 
-            pkg.packageName.includes('모빌리티') ? 'green_mobility' : 'zero_waste_life',
-        title: pkg.packageName,
-        subtitle: pkg.packageDescription,
-        details: pkg.benefits.map((benefit: any) => 
-          `${benefit.category}: ${benefit.cashbackRate} 캐시백`
-        ),
-        isActive: pkg.isActive,
-        icon: require('../../assets/hana3dIcon/hanaIcon3d_17.png'), // 기본 아이콘
-        bgColor: pkg.isActive ? COLORS.primary : COLORS.border
-      }))
+    ? benefitPackages.packages.map((pkg: any) => {
+        // 더 정확한 ID 매칭 로직
+        let id = 'all_green_life'; // 기본값
+        if (pkg.packageName.includes('올인원') || pkg.packageName.includes('ALL_GREEN_LIFE')) {
+          id = 'all_green_life';
+        } else if (pkg.packageName.includes('모빌리티') || pkg.packageName.includes('GREEN_MOBILITY')) {
+          id = 'green_mobility';
+        } else if (pkg.packageName.includes('제로웨이스트') || pkg.packageName.includes('ZERO_WASTE_LIFE')) {
+          id = 'zero_waste_life';
+        }
+        
+        console.log('🔍 패키지 매칭:', { packageName: pkg.packageName, id });
+        
+        return {
+          id,
+          title: pkg.packageName,
+          subtitle: pkg.packageDescription,
+          details: pkg.benefits.map((benefit: any) => 
+            `${benefit.category}: ${benefit.cashbackRate} 캐시백`
+          ),
+          isActive: pkg.isActive,
+          icon: require('../../assets/hana3dIcon/hanaIcon3d_17.png'), // 기본 아이콘
+          bgColor: pkg.isActive ? COLORS.primary : COLORS.border
+        };
+      })
     : [
         // API 실패 시 기본 데이터 (폴백)
         {
@@ -132,25 +144,31 @@ export function BenefitChangeScreen({ visible, onClose, onBenefitSelect }: Benef
 
   const toggleCurrentExpand = () => setIsCurrentExpanded(prev => !prev);
 
-  const openBenefitDetails = (benefitId: string) => {
-    console.log('🔍 혜택 상세 열기:', benefitId);
-    setDetailBenefitId(benefitId);
-    setShowDetail(true);
-    console.log('🔍 showDetail 상태:', true);
-    console.log('🔍 detailBenefitId:', benefitId);
-  };
-  const closeBenefitDetails = () => {
-    setShowDetail(false);
-    setDetailBenefitId(null);
-  };
+  // 혜택 상세 관련 함수들 - 임시 주석처리
+  // const openBenefitDetails = (benefitId: string) => {
+  //   console.log('🔍 혜택 상세 열기:', benefitId);
+  //   console.log('🔍 detailContentById 키들:', Object.keys(detailContentById));
+  //   console.log('🔍 매칭되는 데이터:', detailContentById[benefitId]);
+  //   
+  //   setDetailBenefitId(benefitId);
+  //   setShowDetail(true);
+  //   console.log('🔍 showDetail 상태:', true);
+  //   console.log('🔍 detailBenefitId:', benefitId);
+  // };
+  // const closeBenefitDetails = () => {
+  //   setShowDetail(false);
+  //   setDetailBenefitId(null);
+  // };
 
-  // AI 추천 데이터 로드
-  useEffect(() => {
-    if (visible) {
-      getBenefitRecommendation();
-    }
-  }, [visible, getBenefitRecommendation]);
+  // AI 추천 데이터 로드 - 임시 주석처리
+  // useEffect(() => {
+  //   if (visible) {
+  //     getBenefitRecommendation();
+  //   }
+  // }, [visible, getBenefitRecommendation]);
 
+  // detailContentById 객체 - 임시 주석처리
+  /*
   const detailContentById: Record<string, {
     title: string;
     subtitle: string;
@@ -278,22 +296,25 @@ export function BenefitChangeScreen({ visible, onClose, onBenefitSelect }: Benef
       ],
     },
   };
+  */
 
-  const selectedDetail = detailBenefitId
-    ? (detailContentById as Record<string, { title: string; subtitle: string; rateLabel: string; categories: { name: string; desc: string; rate: string; icons: any[] }[] }>)[detailBenefitId]
-    : null;
-  
-  console.log('🔍 selectedDetail:', selectedDetail);
-  console.log('🔍 showDetail:', showDetail);
-  console.log('🔍 detailBenefitId:', detailBenefitId);
+  // selectedDetail 관련 코드 - 임시 주석처리
+  // const selectedDetail = detailBenefitId
+  //   ? (detailContentById as Record<string, { title: string; subtitle: string; rateLabel: string; categories: { name: string; desc: string; rate: string; icons: any[] }[] }>)[detailBenefitId]
+  //   : null;
+  // 
+  // console.log('🔍 selectedDetail:', selectedDetail);
+  // console.log('🔍 showDetail:', showDetail);
+  // console.log('🔍 detailBenefitId:', detailBenefitId);
 
-  const confirmDetailChange = () => {
-    if (!detailBenefitId) return;
-    setSelectedBenefit(detailBenefitId);
-    onBenefitSelect(detailBenefitId);
-    setShowDetail(false);
-    onClose();
-  };
+  // 혜택 변경 확인 함수 - 임시 주석처리
+  // const confirmDetailChange = () => {
+  //   if (!detailBenefitId) return;
+  //   setSelectedBenefit(detailBenefitId);
+  //   onBenefitSelect(detailBenefitId);
+  //   setShowDetail(false);
+  //   onClose();
+  // };
 
   return (
     <>
@@ -364,15 +385,12 @@ export function BenefitChangeScreen({ visible, onClose, onBenefitSelect }: Benef
                       <Text key={index} style={styles.detailText}>• {detail}</Text>
                     ))
                   )}
-                  <Pressable style={styles.detailButton}>
-                    <Text style={styles.detailButtonText}>자세히 보기</Text>
-                  </Pressable>
                 </View>
               )}
             </View>
 
-            {/* AI 추천 혜택 */}
-            {benefitRecommendation && benefitRecommendation.shouldChange && (
+            {/* AI 추천 혜택 - 임시 주석처리 */}
+            {/* {benefitRecommendation && benefitRecommendation.shouldChange && (
               <View style={styles.recommendationContainer}>
                 <View style={styles.recommendationHeader}>
                   <Text style={styles.recommendationTitle}>이달의 추천 혜택</Text>
@@ -451,10 +469,10 @@ export function BenefitChangeScreen({ visible, onClose, onBenefitSelect }: Benef
                   </Pressable>
                 </View>
               </View>
-            )}
+            )} */}
 
-            {/* Other Benefits */}
-            <View style={styles.otherBenefitsContainer}>
+            {/* Other Benefits - 임시 주석처리 */}
+            {/* <View style={styles.otherBenefitsContainer}>
               <Text style={styles.otherBenefitsTitle}>다른 혜택</Text>
               
               <View style={styles.benefitsList}>
@@ -486,15 +504,15 @@ export function BenefitChangeScreen({ visible, onClose, onBenefitSelect }: Benef
                   );
                 })}
               </View>
-            </View>
+            </View> */}
           </ScrollView>
 
         </View>
       </View>
     </Modal>
     
-    {/* Detail Modal */}
-    <Modal visible={showDetail} transparent animationType="slide" onRequestClose={closeBenefitDetails}>
+    {/* Detail Modal - 임시 주석처리 */}
+    {/* <Modal visible={showDetail} transparent animationType="slide" onRequestClose={closeBenefitDetails} presentationStyle="fullScreen">
       <View style={styles.modalOverlay}>
         <View style={styles.detailContainer}>
           <View style={styles.detailHeader}>
@@ -544,7 +562,7 @@ export function BenefitChangeScreen({ visible, onClose, onBenefitSelect }: Benef
           </View>
         </View>
       </View>
-    </Modal>
+    </Modal> */}
     </>
   );
 }
@@ -559,7 +577,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 9999,
+    zIndex: 99999,
   },
   
   modalContainer: {
@@ -584,7 +602,7 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH,
     height: SCREEN_HEIGHT,
     paddingTop: scaleSize(44), // 상태바 여백 추가
-    zIndex: 10000,
+    zIndex: 100000,
   },
 
   detailHeader: {

@@ -17,6 +17,7 @@ export { default as SeedHistoryScreen } from './SeedHistoryScreen';
 export { default as CompletedChallengeScreen } from './CompletedChallengeScreen';
 export { default as BankHomeMockScreen } from './BankHomeMockScreen';
 export { default as MyTeamsScreen } from './MyTeamsScreen';
+export { default as TeamRankingScreen } from './TeamRankingScreen';
 export { default as EcoReportScreen } from './EcoReportScreen';
 export { default as EcoReportDetailScreen } from './EcoReportDetailScreen';
 export { default as ElectronicReceiptScreen } from './ElectronicReceiptScreen';

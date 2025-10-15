@@ -62,23 +62,23 @@ export function BenefitsScreen({ onBack, onHome, onNavigateToQuiz, onNavigateToW
       subtitle: '종이 대신 전자확인증 사용',
     },
     {
-      id: 'eco-store',
-      image: require('../../assets/hana3dIcon/hanaIcon3d_85.png'),
-      title: '친환경 가맹점 결제',
-      subtitle: '그린 매장에서 결제하고 우대',
-    },
-    {
       id: 'challenge',
       image: require('../../assets/hana3dIcon/hanaIcon3d_103.png'),
       title: '에코 챌린지',
       subtitle: '미션 달성하고 씨앗 받기',
     },
     {
-      id: 'invite',
-      image: require('../../assets/hana3dIcon/hanaIcon3d_4_121.png'),
-      title: '친구초대',
-      subtitle: '5,000 에코씨앗 받기',
+      id: 'eco-store',
+      image: require('../../assets/hana3dIcon/hanaIcon3d_85.png'),
+      title: '친환경 가맹점 결제',
+      subtitle: '그린 매장에서 결제하고 우대',
     },
+    // {
+    //   id: 'invite',
+    //   image: require('../../assets/hana3dIcon/hanaIcon3d_4_121.png'),
+    //   title: '친구초대',
+    //   subtitle: '5,000 에코씨앗 받기',
+    // },
   ];
 
   return (

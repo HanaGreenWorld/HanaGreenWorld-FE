@@ -15,12 +15,39 @@ export default function EcoReportDetailScreen({ report, onBack, onHome }: Props)
   const [viewType, setViewType] = useState<'count' | 'points'>('count');
 
   // 데이터 검증 함수
-  const safeNumber = (value: number | undefined | null, fallback = 0) => {
-    return isNaN(value) || value == null ? fallback : value;
+  const safeNumber = (value: number | undefined | null, fallback = 0): number => {
+    return isNaN(value as number) || value == null ? fallback : value;
+  };
+
+  // 레벨별 캐릭터 이미지 반환
+  const getCharacterImage = (levelText: string) => {
+    if (levelText.includes('새내기')) {
+      return require('../../assets/beginner.png');
+    }
+    if (levelText.includes('실천가')) {
+      return require('../../assets/intermediate.png');
+    }
+    if (levelText.includes('전문가')) {
+      return require('../../assets/expert.png');
+    }
+    return require('../../assets/beginner.png'); // 기본값
   };
 
   // 활동 데이터를 뷰 타입에 따라 변환
   const getActivitiesData = () => {
+    console.log('🔍 EcoReportDetailScreen - 활동 데이터 분석:');
+    console.log('  - 전체 활동 수:', report.activities.length);
+    report.activities.forEach((activity, index) => {
+      console.log(`  - 활동 #${index + 1}:`, {
+        label: activity.label,
+        count: activity.count,
+        points: activity.points,
+        countPercentage: activity.countPercentage,
+        pointsPercentage: activity.pointsPercentage,
+        color: activity.color
+      });
+    });
+    
     return report.activities.map(activity => ({
       label: activity.label,
       value: viewType === 'count' 
@@ -41,9 +68,18 @@ export default function EcoReportDetailScreen({ report, onBack, onHome }: Props)
           
           {/* 레벨 정보 */}
           <View style={styles.levelInfo}>
-            <Text style={styles.levelText}>현재 레벨: {report.summary.currentLevel}</Text>
-            <Text style={styles.progressText}>진행률: {safeNumber(report.summary.levelProgress)}%</Text>
-            <Text style={styles.pointsText}>다음 레벨까지 {safeNumber(report.summary.pointsToNextLevel)} 포인트</Text>
+            <View style={styles.characterContainer}>
+              <Image 
+                source={getCharacterImage(report.summary.currentLevel)}
+                style={styles.characterImage}
+                resizeMode="contain"
+              />
+            </View>
+            <View style={styles.levelDetails}>
+              <Text style={styles.levelText}>{report.summary.currentLevel}</Text>
+              <Text style={styles.progressText}>달성률: {safeNumber(report.summary.levelProgress)}%</Text>
+              <Text style={styles.pointsText}>다음 레벨까지 {safeNumber(report.summary.pointsToNextLevel)} 씨앗</Text>
+            </View>
           </View>
 
           <View style={styles.summaryRow}>
@@ -60,9 +96,6 @@ export default function EcoReportDetailScreen({ report, onBack, onHome }: Props)
               <Text style={styles.summaryValue}>{safeNumber(report.statistics.totalActivities)}회</Text>
             </View>
           </View>
-          <Text style={styles.topActivityMessage}>
-            {report.summary.topActivityMessage || `가장 많이 한 활동: ${report.summary.topActivity}`} 🌱
-          </Text>
         </View>
 
         {/* 2. 활동 분석 */}
@@ -83,23 +116,45 @@ export default function EcoReportDetailScreen({ report, onBack, onHome }: Props)
                 onPress={() => setViewType('points')}
               >
                 <Text style={[styles.toggleButtonText, viewType === 'points' && styles.toggleButtonTextActive]}>
-                  포인트
+                  씨앗
                 </Text>
               </Pressable>
             </View>
           </View>
           
-          <PieChart data={getActivitiesData()} size={160 * SCALE} strokeWidth={40 * SCALE} />
-          <View style={styles.activitiesLegend}>
-            {getActivitiesData().map((activity, index) => (
-              <View key={index} style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: activity.color }]} />
-                <Text style={styles.legendText}>
-                  {activity.label}: {activity.value}%
-                </Text>
-              </View>
-            ))}
+          <View style={styles.chartContainer}>
+            <PieChart 
+              data={getActivitiesData()} 
+              size={160 * SCALE} 
+              strokeWidth={40 * SCALE}
+              showCenterText={true}
+              centerText={viewType === 'count' ? '활동' : '씨앗'}
+              animated={true}
+            />
+            <View style={styles.activitiesLegend}>
+              {report.activities.map((activity, index) => (
+                <View key={index} style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: activity.color }]} />
+                  <View style={styles.legendContent}>
+                    <Text style={styles.legendText}>
+                      {activity.label}: {viewType === 'count' 
+                        ? safeNumber(activity.countPercentage) 
+                        : safeNumber(activity.pointsPercentage)}%
+                    </Text>
+                    <Text style={styles.legendDetail}>
+                      {viewType === 'count' 
+                        ? `${safeNumber(activity.count)}회`
+                        : `${safeNumber(activity.points).toLocaleString()}개`}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
           </View>
+          
+          <Text style={styles.topActivityMessage}>
+            {report.summary.topActivityMessage || `가장 많이 한 활동: ${report.summary.topActivity}`}
+          </Text>
         </View>
 
         {/* 3. 금융 혜택 */}
@@ -111,7 +166,7 @@ export default function EcoReportDetailScreen({ report, onBack, onHome }: Props)
               <Text style={styles.benefitValue}>+{safeNumber(report.financialBenefit.savingsInterest).toLocaleString()}원</Text>
             </View>
             <View style={styles.benefitItem}>
-              <Text style={styles.benefitLabel}>카드 할인</Text>
+              <Text style={styles.benefitLabel}>카드 캐시백</Text>
               <Text style={styles.benefitValue}>+{safeNumber(report.financialBenefit.cardDiscount).toLocaleString()}원</Text>
             </View>
             <View style={styles.benefitItem}>
@@ -129,10 +184,10 @@ export default function EcoReportDetailScreen({ report, onBack, onHome }: Props)
 
         {/* 4. 커뮤니티 랭킹 */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>커뮤니티 랭킹</Text>
+          <Text style={styles.sectionTitle}>사용자 랭킹</Text>
           <View style={styles.rankingContainer}>
             <View style={styles.rankingItem}>
-              <Text style={styles.rankingLabel}>전국 상위</Text>
+              <Text style={styles.rankingLabel}>상위</Text>
               <Text style={styles.rankingValue}>{safeNumber(report.ranking.percentile)}%</Text>
             </View>
             <View style={styles.rankingItem}>
@@ -146,9 +201,9 @@ export default function EcoReportDetailScreen({ report, onBack, onHome }: Props)
           </View>
           {report.ranking.userPoints && (
             <View style={styles.pointsInfo}>
-              <Text style={styles.pointsInfoText}>내 포인트: {safeNumber(report.ranking.userPoints).toLocaleString()}점</Text>
+              <Text style={styles.pointsInfoText}>내 씨앗: {safeNumber(report.ranking.userPoints).toLocaleString()}점</Text>
               {report.ranking.averagePoints && (
-                <Text style={styles.pointsInfoText}>평균 포인트: {safeNumber(report.ranking.averagePoints).toLocaleString()}점</Text>
+                <Text style={styles.pointsInfoText}>평균 씨앗: {safeNumber(report.ranking.averagePoints).toLocaleString()}점</Text>
               )}
             </View>
           )}
@@ -159,39 +214,33 @@ export default function EcoReportDetailScreen({ report, onBack, onHome }: Props)
           <Text style={styles.sectionTitle}>환경 가치 환산</Text>
           <View style={styles.environmentalGrid}>
             <View style={styles.environmentalItem}>
-              <Text style={styles.environmentalIcon}>🌳</Text>
+              <Image 
+                source={require('../../assets/tree.png')} 
+                style={styles.environmentalImage}
+                resizeMode="contain"
+              />
               <Text style={styles.environmentalValue}>{safeNumber(report.environmentalImpact.trees).toFixed(1)}그루</Text>
               <Text style={styles.environmentalLabel}>나무 심기</Text>
             </View>
             <View style={styles.environmentalItem}>
-              <Text style={styles.environmentalIcon}>💧</Text>
+              <Image 
+                source={require('../../assets/water.png')} 
+                style={styles.environmentalImage}
+                resizeMode="contain"
+              />
               <Text style={styles.environmentalValue}>{safeNumber(report.environmentalImpact.waterLiters).toFixed(1)}L</Text>
               <Text style={styles.environmentalLabel}>물 절약</Text>
             </View>
             <View style={styles.environmentalItem}>
-              <Text style={styles.environmentalIcon}>🛍️</Text>
-              <Text style={styles.environmentalValue}>{safeNumber(report.environmentalImpact.plasticBags).toFixed(0)}개</Text>
-              <Text style={styles.environmentalLabel}>비닐봉지</Text>
+              <Image 
+                source={require('../../assets/light.png')} 
+                style={styles.environmentalImage}
+                resizeMode="contain"
+              />
+              <Text style={styles.environmentalValue}>{safeNumber(report.environmentalImpact.energyKwh).toFixed(1)}kWh</Text>
+              <Text style={styles.environmentalLabel}>전기 절약</Text>
             </View>
           </View>
-          {(report.environmentalImpact.energyKwh || report.environmentalImpact.carKm) && (
-            <View style={styles.additionalEnvironmental}>
-              {report.environmentalImpact.energyKwh && (
-                <View style={styles.environmentalItem}>
-                  <Text style={styles.environmentalIcon}>⚡</Text>
-                  <Text style={styles.environmentalValue}>{safeNumber(report.environmentalImpact.energyKwh).toFixed(1)}kWh</Text>
-                  <Text style={styles.environmentalLabel}>전기 절약</Text>
-                </View>
-              )}
-              {report.environmentalImpact.carKm && (
-                <View style={styles.environmentalItem}>
-                  <Text style={styles.environmentalIcon}>🚗</Text>
-                  <Text style={styles.environmentalValue}>{safeNumber(report.environmentalImpact.carKm).toFixed(1)}km</Text>
-                  <Text style={styles.environmentalLabel}>자동차 운행</Text>
-                </View>
-              )}
-            </View>
-          )}
         </View>
 
 
@@ -248,8 +297,10 @@ const styles = StyleSheet.create({
   },
   topActivityMessage: { 
     fontSize: 14 * SCALE, 
-    color: '#10B981', 
-    fontWeight: '600' 
+    color: '#0F8073', 
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 20 * SCALE
   },
   
   // 토글 버튼
@@ -265,7 +316,7 @@ const styles = StyleSheet.create({
     borderRadius: 6 * SCALE 
   },
   toggleButtonActive: { 
-    backgroundColor: '#10B981' 
+    backgroundColor: '#0F8073' 
   },
   toggleButtonText: { 
     fontSize: 12 * SCALE, 
@@ -276,24 +327,45 @@ const styles = StyleSheet.create({
     color: '#FFFFFF' 
   },
   
+  // 차트 컨테이너
+  chartContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginVertical: 8 * SCALE
+  },
+  
   // 활동 범례
   activitiesLegend: { 
-    marginTop: 12 * SCALE 
+    flex: 1,
+    marginLeft: 8 * SCALE,
+    paddingLeft: 16 * SCALE,
+    borderLeftColor: '#E5E7EB'
   },
   legendItem: { 
     flexDirection: 'row', 
-    alignItems: 'center', 
-    marginBottom: 6 * SCALE 
+    alignItems: 'flex-start', 
+    marginBottom: 8 * SCALE 
   },
   legendDot: { 
     width: 12 * SCALE, 
     height: 12 * SCALE, 
     borderRadius: 6 * SCALE, 
-    marginRight: 8 * SCALE 
+    marginRight: 8 * SCALE,
+    marginTop: 2 * SCALE
+  },
+  legendContent: {
+    flex: 1
   },
   legendText: { 
-    fontSize: 12 * SCALE, 
-    color: '#374151' 
+    fontSize: 13 * SCALE, 
+    color: '#374151',
+    fontWeight: '600'
+  },
+  legendDetail: {
+    fontSize: 12 * SCALE,
+    color: '#6B7280',
+    marginTop: 2 * SCALE
   },
   
   // 금융 혜택
@@ -314,13 +386,14 @@ const styles = StyleSheet.create({
   benefitValue: { 
     fontSize: 16 * SCALE, 
     fontWeight: '800', 
-    color: '#10B981' 
+    color: '#108074' 
   },
   benefitTotal: { 
     fontSize: 14 * SCALE, 
     fontWeight: '700', 
     color: '#111827', 
-    textAlign: 'center' 
+    textAlign: 'center',
+    marginTop: 8 * SCALE
   },
   
   // 랭킹
@@ -339,7 +412,7 @@ const styles = StyleSheet.create({
   rankingValue: { 
     fontSize: 18 * SCALE, 
     fontWeight: '800', 
-    color: '#10B981' 
+    color: '#108074' 
   },
   
   // 환경 가치 환산
@@ -351,9 +424,10 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     flex: 1 
   },
-  environmentalIcon: { 
-    fontSize: 24 * SCALE, 
-    marginBottom: 4 * SCALE 
+  environmentalImage: { 
+    width: 32 * SCALE, 
+    height: 32 * SCALE, 
+    marginBottom: 8 * SCALE 
   },
   environmentalValue: { 
     fontSize: 16 * SCALE, 
@@ -398,20 +472,32 @@ const styles = StyleSheet.create({
   
   // 레벨 정보
   levelInfo: {
-    backgroundColor: '#F0FDF4',
-    borderRadius: 12 * SCALE,
-    padding: 12 * SCALE,
     marginBottom: 16 * SCALE,
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  characterContainer: {
+    marginRight: 24 * SCALE,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  characterImage: {
+    width: 80 * SCALE,
+    height: 80 * SCALE,
+    marginLeft: 12 * SCALE,
+  },
+  levelDetails: {
+    flex: 1
   },
   levelText: {
-    fontSize: 14 * SCALE,
+    fontSize: 16 * SCALE,
     fontWeight: '700',
-    color: '#10B981',
+    color: '#0F8073',
     marginBottom: 4 * SCALE,
   },
   progressText: {
     fontSize: 12 * SCALE,
-    color: '#059669',
+    color: '#6B7280',
     marginBottom: 2 * SCALE,
   },
   pointsText: {

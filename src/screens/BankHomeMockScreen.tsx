@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
   cardsSlider: { paddingVertical: 2 * SCALE, paddingHorizontal: 2 * SCALE },
   sliderCard: { width:150 * SCALE, height: 180 * SCALE, marginRight: 12 * SCALE },
   promoIcon: { width: 48 * SCALE, height: 48 * SCALE, borderRadius: 16 * SCALE, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', marginBottom: 16 * SCALE, borderWidth: 1, borderColor: '#E5E7EB' },
-  promoTitle: { fontSize: 18 * SCALE, fontWeight: '700', color: '#111827', marginBottom: 8 * SCALE },
+  promoTitle: { fontSize: 17 * SCALE, fontWeight: '700', color: '#111827', marginBottom: 8 * SCALE },
   detailMuted: { fontSize: 12 * SCALE, color: '#6B7280', position: 'absolute', left: 16 * SCALE, bottom: 24 * SCALE },
 
   bottomMenu: { backgroundColor: '#FFFFFF', paddingTop: 12 * SCALE, borderTopWidth: 1, borderTopColor: '#E5E7EB' },

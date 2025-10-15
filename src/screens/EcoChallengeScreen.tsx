@@ -12,172 +12,106 @@ import {
 } from '../utils/ecoSeedApi';
 import { challengeApi, Challenge as ApiChallenge } from '../utils/challengeApi';
 import { teamApi } from '../utils/teamApi';
+import { getUserInfo } from '../utils/authUtils';
+import { LocalChallenge, CHALLENGE_ICONS } from '../types/challenge';
+import { 
+  convertApiChallengeToLocal, 
+  getAiGuide, 
+  getVerificationExplanation, 
+  fixImageUrl,
+  getChallengeCompletionMessage
+} from '../utils/challengeUtils';
 import TopBar from '../components/TopBar';
-
-// 시뮬레이터 호환성을 위한 조건부 import
-// let ImagePicker: any = null;
-// let isSimulator = false;
-
-// try {
-//   if (Platform.OS !== 'web') {
-//     ImagePicker = require('expo-image-picker');
-//     // 시뮬레이터 감지
-//     isSimulator = Platform.OS === 'ios' && !ImagePicker.launchImageLibraryAsync;
-//   }
-// } catch (error) {
-//   console.log('expo-image-picker not available in simulator');
-//   isSimulator = true;
-// }
 
 // ImagePicker 활성화
 import * as ImagePicker from 'expo-image-picker';
-// import * as MediaLibrary from 'expo-media-library'; // 더 이상 사용하지 않음
 let isSimulator = false;
+
+// 시뮬레이터 감지
+if (Platform.OS === 'ios') {
+  try {
+    const { Device } = require('expo-device');
+    isSimulator = Device.isDevice === false;
+  } catch (e) {
+    isSimulator = true;
+  }
+} else {
+  isSimulator = false;
+}
 
 interface EcoChallengeScreenProps {
   onBack: () => void;
-  onShowHistory?: () => void;
-  onShowCompletedChallenges?: () => void;
-  onShowSeedHistory?: () => void;
+  onShowHistory: () => void;
+  onShowSeedHistory: () => void;
 }
 
-// API에서 받아오는 Challenge 타입은 challengeApi에서 import
-type LocalChallenge = ApiChallenge & {
-  challengeType: 'image' | 'steps' | 'simple';
-  icon: any; // 로컬 아이콘 경로
-};
+export default function EcoChallengeScreen({ onBack, onShowHistory, onShowSeedHistory }: EcoChallengeScreenProps) {
+  // 기존 상태 관리 방식 사용 (안정성을 위해)
+  const [teamInfo, setTeamInfo] = useState<any>(null);
+  const [userTeamRole, setUserTeamRole] = useState<'LEADER' | 'MEMBER' | null>(null);
 
-// 아이콘 매핑 (새로운 ChallengeCode enum에 맞춤)
-const CHALLENGE_ICONS: Record<string, any> = {
-  'REUSABLE_BAG': require('../../assets/hana3dIcon/hanaIcon3d_107.png'),
-  'PLUGGING': require('../../assets/plugging.png'),
-  'TEAM_PLUGGING': require('../../assets/green_team.png'),
-  'WEEKLY_STEPS': require('../../assets/hana3dIcon/hanaIcon3d_123.png'),
-  'TEAM_WALKING': require('../../assets/hana3dIcon/hanaIcon3d_4_33.png'),
-  'TUMBLER_CHALLENGE': require('../../assets/tumbler.png'),
-  'RECYCLE': require('../../assets/hana3dIcon/zero_waste.png'),
-  // 기본 아이콘
-  'default': require('../../assets/hana3dIcon/hanaIcon3d_4_13.png'),
-};
-
-// API 챌린지를 로컬 챌린지 형태로 변환하는 함수
-const convertApiChallengeToLocal = (apiChallenge: ApiChallenge): LocalChallenge => {
-  // challengeType 결정 로직 (새로운 ChallengeCode enum 기반)
-  let challengeType: 'image' | 'steps' | 'simple' = 'image';
-  
-  // 걸음수 관련 챌린지들
-  const stepsChallenges = ['WEEKLY_STEPS', 'DAILY_STEPS', 'TEAM_WALKING'];
-  if (stepsChallenges.includes(apiChallenge.code)) {
-    challengeType = 'steps';
-  }
-  
-  // 추후 간단한 체크 챌린지가 있다면 여기에 추가
-  // const simpleChallenges = ['SIMPLE_CHECK'];
-  // if (simpleChallenges.includes(apiChallenge.code)) {
-  //   challengeType = 'simple';
-  // }
-
-  // 챌린지별 AI 가이드 생성
-  const getAiGuide = (code: string): string[] => {
-    const aiGuides: Record<string, string[]> = {
-      'REUSABLE_BAG': [
-        '재사용 가능한 가방을 들고 있는 모습을 촬영하세요',
-        '가방이 명확히 보이도록 촬영하세요',
-        '가방의 재질이나 브랜드가 인식 가능하도록 하세요'
-      ],
-      'REUSABLE_BAG_EXTENDED': [
-        '재사용 가능한 가방을 들고 있는 모습을 촬영하세요',
-        '가방이 명확히 보이도록 촬영하세요',
-        '가방의 재질이나 브랜드가 인식 가능하도록 하세요'
-      ],
-      'PLUGGING': [
-        '전자기기 플러그를 뽑는 모습을 촬영하세요',
-        '플러그가 뽑힌 상태가 명확히 보이도록 하세요',
-        '전자기기가 꺼진 상태임을 보여주세요'
-      ],
-      'PLUGGING_MARATHON': [
-        '전자기기 플러그를 뽑는 모습을 촬영하세요',
-        '플러그가 뽑힌 상태가 명확히 보이도록 하세요',
-        '전자기기가 꺼진 상태임을 보여주세요'
-      ],
-      'TEAM_PLUGGING': [
-        '팀원들과 함께 전자기기 플러그를 뽑는 모습을 촬영하세요',
-        '플러그가 뽑힌 상태가 명확히 보이도록 하세요',
-        '팀원들이 함께 참여하는 모습을 보여주세요'
-      ],
-      'NO_PLASTIC': [
-        '플라스틱을 사용하지 않는 모습을 촬영하세요',
-        '대체품(유리병, 텀블러 등)을 사용하는 모습을 보여주세요',
-        '플라스틱 제품이 없는 환경임을 보여주세요'
-      ],
-      'TUMBLER_CHALLENGE': [
-        '텀블러를 사용하는 모습을 촬영하세요',
-        '텀블러가 명확히 보이도록 촬영하세요',
-        '일회용 컵 대신 텀블러를 사용하는 모습을 보여주세요'
-      ],
-      'RECYCLE': [
-        '재활용품을 분리수거하는 모습을 촬영하세요',
-        '재활용품이 올바른 분리수거함에 들어가는 모습을 보여주세요',
-        '재활용 가능한 물품임을 명확히 보여주세요'
-      ]
-    };
-    
-    return aiGuides[code] || [
-      '챌린지와 관련된 활동을 명확히 촬영하세요',
-      '활동 내용이 잘 보이도록 조명에 주의하세요',
-      '챌린지 요구사항을 충족하는 모습을 보여주세요'
-    ];
+  // 팀 정보 로드 함수
+  const loadTeamInfo = async () => {
+    try {
+      console.log('🔍 팀 정보 가져오기 시작...');
+      const team = await teamApi.getMyTeam();
+      
+      if (team) {
+        setTeamInfo(team);
+        
+        // 팀장 여부 확인 - 팀 정보에서 직접 확인
+        try {
+          console.log('🔍 팀 정보 전체:', team);
+          console.log('🔍 팀 정보 isLeader 필드:', team.isLeader);
+          
+          // 팀 정보에서 직접 isLeader 필드 확인
+          if (team.isLeader !== undefined && team.isLeader !== null) {
+            setUserTeamRole(team.isLeader ? 'LEADER' : 'MEMBER');
+            console.log('✅ 팀장 여부 확인 완료 (팀 정보):', { 
+              teamName: team.name, 
+              isLeader: team.isLeader,
+              role: team.isLeader ? 'LEADER' : 'MEMBER' 
+            });
+          } else {
+            // 백업 방법: owner 필드 확인
+            const userInfo = await getUserInfo();
+            console.log('🔍 사용자 정보:', userInfo);
+            console.log('🔍 팀 owner 정보:', team.owner);
+            
+            const isOwner = team.owner === userInfo?.name || team.owner === userInfo?.email;
+            setUserTeamRole(isOwner ? 'LEADER' : 'MEMBER');
+            console.log('✅ 팀장 여부 확인 완료 (owner 필드):', { 
+              teamName: team.name, 
+              owner: team.owner, 
+              userName: userInfo?.name,
+              userEmail: userInfo?.email,
+              isOwner,
+              role: isOwner ? 'LEADER' : 'MEMBER' 
+            });
+          }
+        } catch (roleError) {
+          console.error('팀장 여부 확인 실패:', roleError);
+          // 임시로 LEADER로 설정 (디버깅용)
+          setUserTeamRole('LEADER');
+          console.log('⚠️ 팀장 여부 확인 실패, 임시로 LEADER로 설정');
+        }
+        
+        return team;
+      } else {
+        setTeamInfo(null);
+        setUserTeamRole(null);
+        console.log('📝 사용자가 속한 팀이 없습니다.');
+        return null;
+      }
+    } catch (error) {
+      console.error('팀 정보 로드 실패:', error);
+      setTeamInfo(null);
+      setUserTeamRole(null);
+      return null;
+    }
   };
 
-  // 기본 필드들을 추가하여 UI에서 사용할 수 있도록 함
-  const localChallenge: LocalChallenge = {
-    ...apiChallenge,
-    challengeType,
-    icon: CHALLENGE_ICONS[apiChallenge.code] || CHALLENGE_ICONS.default,
-    // UI에서 필요한 기본 필드들 추가
-    activity: apiChallenge.description,
-    aiGuide: getAiGuide(apiChallenge.code),
-    process: [
-      '1. 챌린지 요구사항을 확인하세요',
-      '2. 관련 활동을 수행하세요',
-      '3. 인증 사진을 촬영하세요',
-      '4. 사진을 업로드하세요',
-      '5. AI 검증을 시작하세요'
-    ],
-    rewardDesc: apiChallenge.points ? `+${apiChallenge.points} 씨앗` : (apiChallenge.teamScore ? `팀 점수 +${apiChallenge.teamScore}` : ''),
-    note: apiChallenge.isTeamChallenge ? '팀 챌린지' : '개인 챌린지',
-  };
-
-  return localChallenge;
-};
-
-// 검증 상태에 따른 설명 생성 함수
-const getVerificationExplanation = (status: string): string => {
-  const explanations: Record<string, string> = {
-    'APPROVED': '챌린지 요구사항을 성공적으로 충족했습니다.',
-    'REJECTED': '챌린지 요구사항을 충족하지 못했습니다.',
-    'PENDING': 'AI 검증이 진행 중입니다.',
-    'NEEDS_REVIEW': '수동 검토가 필요합니다.',
-    'VERIFIED': '인증이 완료되었습니다.'
-  };
-  
-  return explanations[status] || '검증 상태를 확인할 수 없습니다.';
-};
-
-// 검증 상태에 따른 메시지 생성 함수
-const getVerificationMessage = (status: string): string => {
-  const messages: Record<string, string> = {
-    'APPROVED': '🎉 인증이 성공적으로 완료되었습니다!',
-    'REJECTED': '❌ 인증에 실패했습니다. 다시 시도해주세요.',
-    'PENDING': '⏳ AI 검증이 진행 중입니다.',
-    'NEEDS_REVIEW': '🟡 수동 검토가 필요합니다.',
-    'VERIFIED': '✅ 인증이 완료되었습니다.'
-  };
-  
-  return messages[status] || '검증 상태를 확인할 수 없습니다.';
-};
-
-export default function EcoChallengeScreen({ onBack, onShowHistory, onShowCompletedChallenges, onShowSeedHistory }: EcoChallengeScreenProps) {
+  // 기존 상태들 (점진적으로 제거 예정)
   const [completed, setCompleted] = useState<Record<string, boolean>>({});
   const [participationStatus, setParticipationStatus] = useState<Record<string, string>>({});
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -189,15 +123,123 @@ export default function EcoChallengeScreen({ onBack, onShowHistory, onShowComple
   const [capturedImages, setCapturedImages] = useState<Record<string, string>>({});
   const [galleryPermission, setGalleryPermission] = useState<any>(null);
   const [uploadingImages, setUploadingImages] = useState<Record<string, boolean>>({});
-  const [pendingImages, setPendingImages] = useState<Record<string, string>>({}); // 인증 대기 중인 이미지들
-  const [aiResults, setAiResults] = useState<Record<string, any>>({}); // AI 검증 결과들
-  const [verifyingChallenges, setVerifyingChallenges] = useState<Record<string, boolean>>({}); // AI 검증 진행 중인 챌린지들
+  const [pendingImages, setPendingImages] = useState<Record<string, string>>({});
+  const [aiResults, setAiResults] = useState<Record<string, any>>({});
+  const [verifyingChallenges, setVerifyingChallenges] = useState<Record<string, boolean>>({});
+  const [participatedChallenges, setParticipatedChallenges] = useState<Record<string, boolean>>({});
+  const [teamChallengeStatus, setTeamChallengeStatus] = useState<Record<string, string>>({});
   
   // API에서 받아온 챌린지 데이터
   const [challenges, setChallenges] = useState<LocalChallenge[]>([]);
   const [isLoadingChallenges, setIsLoadingChallenges] = useState(true);
   
   const selected = challenges.find((c) => c.id.toString() === selectedId) || null;
+
+  // 누락된 함수들 추가
+  const participateInTeamChallenge = async (challenge: LocalChallenge) => {
+    try {
+      console.log('팀 챌린지 참여 시작:', challenge.title);
+      
+      // 팀장 권한 확인
+      if (userTeamRole !== 'LEADER') {
+        Alert.alert(
+          '팀장 전용 챌린지',
+          '이 챌린지는 팀장만 참여할 수 있습니다.\n\n팀장이 되어 팀을 대표해서 참여해보세요! 👑',
+          [{ text: '확인', style: 'default' }]
+        );
+        return false;
+      }
+      
+      const participationResult = await challengeApi.participateInChallenge(challenge.id, {
+        teamId: teamInfo?.id // 팀 챌린지는 teamId 필요
+      });
+      
+      if (participationResult) {
+        // 팀 챌린지 상태 업데이트
+        const challengeIdStr = challenge.id.toString();
+        setTeamChallengeStatus(prev => {
+          const newState = { 
+            ...prev, 
+            [challengeIdStr]: 'LEADER_PARTICIPATED' 
+          };
+          console.log('🔄 팀 챌린지 상태 업데이트:', { challengeId: challengeIdStr, newState });
+          return newState;
+        });
+        
+        Alert.alert(
+          '팀 챌린지 참여 완료',
+          `${challenge.title}에 성공적으로 참여했습니다!\n이제 인증 사진을 업로드해주세요.`,
+          [{ text: '확인', style: 'default' }]
+        );
+        return true;
+      } else {
+        Alert.alert('참여 실패', '팀 챌린지 참여에 실패했습니다. 다시 시도해주세요.', [{ text: '확인' }]);
+        return false;
+      }
+    } catch (error) {
+      console.error('팀 챌린지 참여 실패:', error);
+      Alert.alert('참여 실패', '팀 챌린지 참여 중 오류가 발생했습니다. 다시 시도해주세요.', [{ text: '확인' }]);
+      return false;
+    }
+  };
+
+  const participateInPersonalChallenge = async (challenge: LocalChallenge) => {
+    try {
+      console.log('개인 챌린지 참여 시작:', challenge.title);
+      
+      const participationResult = await challengeApi.participateInChallenge(challenge.id, {
+        teamId: undefined // 개인 챌린지는 teamId 없음
+      });
+      
+      if (participationResult) {
+        // 참여 상태 업데이트
+        setParticipationStatus(prev => ({ 
+          ...prev, 
+          [challenge.id.toString()]: 'PARTICIPATED' 
+        }));
+        
+        Alert.alert(
+          '챌린지 참여 완료',
+          `${challenge.title}에 성공적으로 참여했습니다!\n이제 인증 사진을 업로드해주세요.`,
+          [{ text: '확인', style: 'default' }]
+        );
+        return true;
+      } else {
+        Alert.alert('참여 실패', '챌린지 참여에 실패했습니다. 다시 시도해주세요.', [{ text: '확인' }]);
+        return false;
+      }
+    } catch (error) {
+      console.error('개인 챌린지 참여 실패:', error);
+      Alert.alert('참여 실패', '챌린지 참여 중 오류가 발생했습니다. 다시 시도해주세요.', [{ text: '확인' }]);
+      return false;
+    }
+  };
+
+  const handleStepsChallenge = async (challenge: LocalChallenge) => {
+    console.log('걸음수 챌린지 처리:', challenge.title);
+    
+    // 이미 오늘 제출한 기록이 있는지 확인
+    try {
+      const todayRecord = await fetchTodayWalkingRecord();
+      if (todayRecord.walkingId) {
+        // 이미 오늘 제출한 기록이 있음
+        Alert.alert(
+          '이미 완료됨',
+          '오늘은 이미 걸음수 챌린지를 완료했습니다!',
+          [{ text: '확인' }]
+        );
+        // 챌린지 완료 상태로 설정
+        setCompleted(prev => ({ ...prev, [challenge.id.toString()]: true }));
+        return;
+      }
+    } catch (error) {
+      console.log('오늘 기록 확인 실패, 모달을 계속 표시:', error);
+    }
+    
+    setShowStepsModal(true);
+  };
+
+  // 총 보상 계산
   const totalReward = useMemo(() => {
     return challenges.reduce((acc, c) => {
       const challengeId = c.id.toString();
@@ -227,6 +269,157 @@ export default function EcoChallengeScreen({ onBack, onShowHistory, onShowComple
     }).length;
   }, [completed, challenges, aiResults]);
 
+  // 챌린지 데이터 로드
+  useEffect(() => {
+    const fetchChallenges = async () => {
+      try {
+        setIsLoadingChallenges(true);
+        console.log('API에서 챌린지 데이터 가져오는 중...');
+        const apiChallenges = await challengeApi.getActiveChallenges();
+        
+        // 팀 정보도 함께 가져오기
+        try {
+          await loadTeamInfo();
+        } catch (error) {
+          console.error('❌ 팀 정보 가져오기 실패 (초기 로드):', error);
+        }
+        console.log('API 챌린지 데이터:', apiChallenges);
+        
+        if (apiChallenges && apiChallenges.length > 0) {
+          const localChallenges = apiChallenges.map(convertApiChallengeToLocal);
+          setChallenges(localChallenges);
+          console.log('변환된 로컬 챌린지:', localChallenges);
+          
+          // 참여 상태는 fetchCompletedData에서 설정됨
+        } else {
+          console.log('활성 챌린지가 없습니다.');
+          setChallenges([]);
+        }
+      } catch (error) {
+        console.error('챌린지 데이터 로드 실패:', error);
+        console.error('에러 스택:', error instanceof Error ? error.stack : 'No stack trace');
+        setChallenges([]);
+      } finally {
+        setIsLoadingChallenges(false);
+      }
+    };
+
+    fetchChallenges();
+  }, []); // 의존성 배열을 빈 배열로 변경하여 한 번만 실행
+
+  // 완료된 챌린지 데이터 가져오기
+  useEffect(() => {
+    const fetchCompletedData = async () => {
+      try {
+        console.log('완료된 챌린지 데이터 가져오기 시작...');
+        const participations = await challengeApi.getMyChallengeParticipations();
+        console.log('참여한 챌린지들:', participations);
+        
+        const completedState: Record<string, boolean> = {};
+        const participatedState: Record<string, boolean> = {};
+        const participationStatusState: Record<string, string> = {};
+        const teamChallengeStatusState: Record<string, string> = {};
+        const imagesState: Record<string, string> = {};
+        const pendingImagesState: Record<string, string> = {};
+        const aiResultsState: Record<string, any> = {};
+        
+        participations.forEach(participation => {
+          const challengeId = participation.challenge.id.toString();
+          const status = participation.verificationStatus;
+          const isTeamChallenge = participation.challenge.isTeamChallenge;
+          
+          // 참여 상태 설정 (모든 참여한 챌린지는 PARTICIPATED 상태)
+          participatedState[challengeId] = true;
+          
+          if (isTeamChallenge) {
+            // 팀 챌린지 상태 설정 (백엔드 상태 그대로 사용)
+            if (status === 'PARTICIPATED') {
+              teamChallengeStatusState[challengeId] = 'LEADER_PARTICIPATED';
+            } else if (status === 'PENDING') {
+              teamChallengeStatusState[challengeId] = 'PENDING';
+            } else if (status === 'VERIFYING') {
+              teamChallengeStatusState[challengeId] = 'VERIFYING';
+            } else if (status === 'NEEDS_REVIEW') {
+              teamChallengeStatusState[challengeId] = 'NEEDS_REVIEW';
+            } else if (status === 'APPROVED' || status === 'REJECTED') {
+              teamChallengeStatusState[challengeId] = status;
+            }
+          } else {
+            // 개인 챌린지 상태 설정 (백엔드 상태 그대로 사용)
+            if (status === 'PARTICIPATED') {
+              participationStatusState[challengeId] = 'PARTICIPATED';
+            } else if (status === 'PENDING') {
+              participationStatusState[challengeId] = 'PENDING';
+            } else if (status === 'VERIFYING') {
+              participationStatusState[challengeId] = 'VERIFYING';
+            } else if (status === 'NEEDS_REVIEW') {
+              participationStatusState[challengeId] = 'NEEDS_REVIEW';
+            } else if (status === 'APPROVED' || status === 'REJECTED') {
+              participationStatusState[challengeId] = status;
+            }
+          }
+          
+          // 완료 상태 설정 (승인된 것만)
+          if (status === 'APPROVED' || status === 'REJECTED') {
+            completedState[challengeId] = true;
+          }
+          
+          // 이미지가 있으면 저장 (서버에서 받은 URL은 pendingImages에만 저장)
+          if (participation.imageUrl && typeof participation.imageUrl === 'string') {
+            const imageUrl = participation.imageUrl;
+            // capturedImages는 화면 표시용이므로 서버 URL을 그대로 사용 (fixImageUrl에서 처리됨)
+            imagesState[challengeId] = imageUrl;
+            pendingImagesState[challengeId] = imageUrl; // AI 검증용
+            console.log('📸 이미지 로드:', { challengeId, imageUrl });
+          }
+          
+          // AI 검증 결과 저장
+          if (participation.aiConfidence || participation.aiExplanation) {
+            aiResultsState[challengeId] = {
+              verificationStatus: participation.verificationStatus,
+              confidence: participation.aiConfidence,
+              explanation: participation.aiExplanation,
+              aiDetectedItems: participation.aiDetectedItems,
+              verifiedAt: participation.verifiedAt // 완료 날짜 추가
+            };
+          }
+        });
+        
+        // 참여하지 않은 챌린지들에 대해서도 NOT_PARTICIPATED 상태 설정
+        challenges.forEach(challenge => {
+          const challengeId = challenge.id.toString();
+          if (!participationStatusState[challengeId]) {
+            participationStatusState[challengeId] = 'NOT_PARTICIPATED';
+          }
+          if (!teamChallengeStatusState[challengeId] && challenge.isTeamChallenge) {
+            teamChallengeStatusState[challengeId] = 'NOT_STARTED';
+          }
+        });
+        
+        setCompleted(completedState);
+        setParticipatedChallenges(participatedState);
+        setParticipationStatus(participationStatusState);
+        setTeamChallengeStatus(teamChallengeStatusState);
+        setCapturedImages(imagesState);
+        setPendingImages(pendingImagesState);
+        setAiResults(aiResultsState);
+        
+        console.log('완료된 챌린지 데이터 로드 완료:', { 
+          completedState, 
+          participationStatusState, 
+          teamChallengeStatusState 
+        });
+      } catch (error) {
+        console.error('완료된 챌린지 데이터 로드 실패:', error);
+        console.error('에러 스택:', error instanceof Error ? error.stack : 'No stack trace');
+      }
+    };
+
+    if (challenges.length > 0) {
+      fetchCompletedData();
+    }
+  }, [challenges]); // challenges가 로드된 후에 실행
+
   // 걸음수 생성 함수 (WalkingScreen에서 가져옴)
   const generateTodaySteps = (): number => {
     const baseSteps = Math.floor(2000 + Math.random() * 13000);
@@ -246,420 +439,235 @@ export default function EcoChallengeScreen({ onBack, onShowHistory, onShowComple
     return Math.floor(baseSteps * multiplier);
   };
 
-  // 챌린지 데이터 새로고침 함수
-  const refreshChallenges = async () => {
-    try {
-      console.log('챌린지 데이터 새로고침 중...');
-      const apiChallenges = await challengeApi.getActiveChallenges();
-      console.log('새로고침된 API 챌린지 데이터:', apiChallenges);
-      
-      if (apiChallenges && apiChallenges.length > 0) {
-        const localChallenges = apiChallenges.map(convertApiChallengeToLocal);
-        setChallenges(localChallenges);
-        console.log('새로고침된 로컬 챌린지:', localChallenges);
-        
-        // 백엔드에서 받은 참여 상태를 로컬 상태에 반영
-        const completedState: Record<string, boolean> = {};
-        const statusState: Record<string, string> = {};
-        
-        localChallenges.forEach(challenge => {
-          const challengeId = challenge.id.toString();
-          completedState[challengeId] = challenge.isParticipated || false;
-          statusState[challengeId] = challenge.participationStatus || 'NOT_PARTICIPATED';
-        });
-        
-        setCompleted(completedState);
-        setParticipationStatus(statusState);
-      }
-    } catch (error) {
-      console.error('챌린지 데이터 새로고침 실패:', error);
-    }
-  };
-
-  // API에서 챌린지 데이터 가져오기
-  useEffect(() => {
-    const fetchChallenges = async () => {
-      try {
-        setIsLoadingChallenges(true);
-        console.log('API에서 챌린지 데이터 가져오는 중...');
-        const apiChallenges = await challengeApi.getActiveChallenges();
-        console.log('API 챌린지 데이터:', apiChallenges);
-        
-        if (apiChallenges && apiChallenges.length > 0) {
-          const localChallenges = apiChallenges.map(convertApiChallengeToLocal);
-          setChallenges(localChallenges);
-          console.log('변환된 로컬 챌린지:', localChallenges);
-          
-          // 백엔드에서 받은 참여 상태를 로컬 상태에 반영
-          const completedState: Record<string, boolean> = {};
-          const statusState: Record<string, string> = {};
-          
-          localChallenges.forEach(challenge => {
-            const challengeId = challenge.id.toString();
-            completedState[challengeId] = challenge.isParticipated || false;
-            statusState[challengeId] = challenge.participationStatus || 'NOT_PARTICIPATED';
-          });
-          
-          setCompleted(completedState);
-          setParticipationStatus(statusState);
-        } else {
-          console.log('API 데이터가 비어있음, 폴백 데이터 사용');
-          // setChallenges(FALLBACK_CHALLENGES); // 폴백 데이터 사용 (필요 시)
-        }
-      } catch (error) {
-        console.error('챌린지 데이터 가져오기 실패:', error);
-        // setChallenges(FALLBACK_CHALLENGES); // 에러 시 폴백 데이터 사용
-      } finally {
-        setIsLoadingChallenges(false);
-      }
-    };
-    
-    fetchChallenges();
-  }, []);
-
-  // 완료된 챌린지의 이미지와 AI 검증 결과 가져오기
-  useEffect(() => {
-    const fetchCompletedData = async () => {
-      try {
-        console.log('완료된 챌린지 데이터 가져오기 시작...');
-        const participations = await challengeApi.getMyChallengeParticipations();
-        console.log('참여 내역 조회 결과:', participations);
-        
-        // 모든 참여 내역에서 이미지가 있는 것들을 가져오기 (상태에 관계없이)
-        const imagesState: Record<string, string> = {};
-        const aiResultsState: Record<string, any> = {};
-        
-        participations.forEach(participation => {
-          const challengeId = participation.challenge.id.toString();
-          
-          // 이미지 URL 저장
-          if (participation.imageUrl) {
-            console.log(`챌린지 ${challengeId} 이미지 URL:`, participation.imageUrl);
-            imagesState[challengeId] = participation.imageUrl;
-          }
-          
-          // AI 검증 결과 저장 (verificationStatus가 있는 경우)
-          if (participation.verificationStatus && participation.verificationStatus !== 'NOT_PARTICIPATED') {
-            console.log(`챌린지 ${challengeId} AI 검증 상태:`, participation.verificationStatus);
-            console.log(`챌린지 ${challengeId} AI 상세 정보:`, {
-              confidence: participation.aiConfidence,
-              explanation: participation.aiExplanation,
-              detectedItems: participation.aiDetectedItems
-            });
-            
-            // 백엔드에서 받은 데이터를 AI 결과 형태로 변환
-            const aiResult = {
-              verificationStatus: participation.verificationStatus,
-              confidence: participation.aiConfidence || 0.95, // 백엔드에서 받은 값 또는 기본값
-              explanation: participation.aiExplanation || getVerificationExplanation(participation.verificationStatus),
-              detectedItems: participation.aiDetectedItems ? JSON.parse(participation.aiDetectedItems) : [], // JSON 파싱
-              message: getVerificationMessage(participation.verificationStatus),
-              verifiedAt: participation.verifiedAt
-            };
-            
-            aiResultsState[challengeId] = aiResult;
-            console.log(`챌린지 ${challengeId} AI 결과:`, aiResult);
-          }
-        });
-        
-        console.log('로드된 이미지 상태:', imagesState);
-        console.log('로드된 AI 결과 상태:', aiResultsState);
-        
-        setCapturedImages(imagesState);
-        setAiResults(aiResultsState);
-      } catch (error) {
-        console.error('완료된 챌린지 데이터 가져오기 실패:', error);
-        // 에러가 발생해도 빈 객체로 설정하여 앱이 크래시되지 않도록 함
-        setCapturedImages({});
-        setAiResults({});
-      }
-    };
-    
-    fetchCompletedData();
-  }, []);
-
-  // 걸음수 연동 상태 확인
+  // 걸음수 연결 확인 및 데이터 로드
   useEffect(() => {
     const checkWalkingConnection = async () => {
       try {
         const consentResponse = await fetchWalkingConsent();
         setWalkingConnected(consentResponse.isConsented);
+        
         if (consentResponse.isConsented) {
-          setCurrentSteps(generateTodaySteps());
+          // 권한이 있으면 오늘 기록 조회
+          try {
+            const todayRecord = await fetchTodayWalkingRecord();
+            if (todayRecord.walkingId) {
+              // 오늘 이미 기록이 있음
+              setCurrentSteps(todayRecord.steps || 0);
+            } else {
+              // 오늘 기록이 없음 - 0으로 초기화 (더미데이터 제거)
+              setCurrentSteps(0);
+            }
+          } catch (error) {
+            // 오늘 기록 조회 실패 시 0으로 초기화 (더미데이터 제거)
+            setCurrentSteps(0);
+          }
+        } else {
+          // 권한이 없으면 기본값 설정
+          setCurrentSteps(0);
         }
+        
+        console.log('걸음수 연결 상태:', consentResponse.isConsented);
       } catch (error) {
-        console.error('걸음수 연동 상태 확인 실패:', error);
+        console.error('걸음수 연결 확인 실패:', error);
+        setWalkingConnected(false);
+        setCurrentSteps(0);
       }
     };
+
     checkWalkingConnection();
-  }, []);
+  }, []); // 의존성 배열을 빈 배열로 변경하여 한 번만 실행
 
-  // 갤러리 권한 요청
-  // useEffect(() => {
-  //   const requestGalleryPermission = async () => {
-  //     try {
-  //       if (ImagePicker && ImagePicker.requestMediaLibraryPermissionsAsync) {
-  //         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  //         setGalleryPermission(permission);
-  //       } else {
-  //         // 시뮬레이터에서는 더미 권한 설정
-  //         setGalleryPermission({ granted: true, canAskAgain: true, status: 'granted' });
-  //       }
-  //     } catch (error) {
-  //       console.error('갤러리 권한 요청 실패:', error);
-  //       // 에러 시에도 더미 권한 설정
-  //       setGalleryPermission({ granted: true, canAskAgain: true, status: 'granted' });
-  //     }
-  //   };
-  //   requestGalleryPermission();
-  // }, []);
-
-  // 임시로 더미 권한 설정
+  // 갤러리 권한 설정
   useEffect(() => {
     setGalleryPermission({ granted: true, canAskAgain: true, status: 'granted' });
-  }, []);
+  }, []); // 의존성 배열을 빈 배열로 변경하여 한 번만 실행
 
-  // 챌린지 참여하기 버튼 클릭 핸들러
-  const handleChallengePress = async (challenge: LocalChallenge) => {
-    // 팀장 전용 챌린지 권한 확인
-    if (challenge.isLeaderOnly) {
-      try {
-        const isLeader = await teamApi.isTeamLeader();
-        if (!isLeader) {
-          Alert.alert(
-            '팀장 전용 챌린지',
-            '이 챌린지는 팀장만 참여할 수 있습니다.\n\n팀장이 되어 팀을 대표해서 참여해보세요! 👑',
-            [{ text: '확인', style: 'default' }]
-          );
-          return;
-        }
-      } catch (error) {
-        console.error('팀장 권한 확인 실패:', error);
-        Alert.alert(
-          '권한 확인 실패',
-          '팀장 권한을 확인할 수 없습니다. 다시 시도해주세요.',
-          [{ text: '확인', style: 'default' }]
-        );
-        return;
-      }
-    }
 
-    setSelectedId(challenge.id.toString()); // 선택된 챌린지 설정
-    
-    if (challenge.challengeType === 'steps') {
-      if (walkingConnected) {
-        setShowStepsModal(true);
-      } else {
-        Alert.alert(
-          '걸음수 연동 필요',
-          '걸음수 챌린지를 참여하려면 건강 앱과 연동이 필요합니다.',
-          [
-            { text: '취소', style: 'cancel' },
-            { text: '연동하기', onPress: () => setShowStepsModal(true) }
-          ]
-        );
-      }
-    } else if (challenge.challengeType === 'image') {
-      setShowImageOptions(true);
-    } else {
-      // simple 타입은 바로 완료 처리
-      setCompleted((prev) => ({ ...prev, [challenge.id.toString()]: true }));
-      setSelectedId(null);
-      Alert.alert('인증 완료!', `${challenge.points}개의 씨앗을 받았습니다!`);
-    }
+  const uploadImage = async (challengeId: number, imageUri: string): Promise<boolean> => {
+    // 임시로 성공 처리
+    return true;
   };
 
-  // 갤러리에서 이미지 선택 (사용하지 않음 - ImageUploader 컴포넌트에서 처리)
-  const pickImageFromGallery = async () => {
-    console.log('pickImageFromGallery 호출됨 - 이 함수는 더 이상 사용하지 않습니다.');
-    console.log('ImageUploader 컴포넌트에서 갤러리 선택을 처리합니다.');
-    return; // 즉시 종료
-    
-    try {
-      // 아래 코드는 더 이상 실행되지 않음
-      if (isSimulator || !ImagePicker || !ImagePicker.launchImageLibraryAsync) {
-        console.log('시뮬레이터 모드 - 함수 종료');
-        return;
-      }
-
-      // 권한 확인
-      // if (!galleryPermission?.granted) {
-      //   Alert.alert(
-      //     '갤러리 접근 권한 필요',
-      //     '이미지를 선택하려면 갤러리 접근 권한이 필요합니다.',
-      //     [
-      //       { text: '취소', style: 'cancel' },
-      //       { 
-      //         text: '설정으로 이동', 
-      //         onPress: async () => {
-      //           if (ImagePicker && ImagePicker.requestMediaLibraryPermissionsAsync) {
-      //             const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      //             setGalleryPermission(permission);
-      //             if (permission.granted) {
-      //               pickImageFromGallery();
-      //             }
-      //           }
-      //         }
-      //       }
-      //     ]
-      //   );
-      //   return;
-      // }
-
-      // const result = await ImagePicker.launchImageLibraryAsync({
-      //   mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      //   allowsEditing: true,
-      //   aspect: [4, 3],
-      //   quality: 0.8,
-      //   exif: false,
-      // });
-
-      // if (!result.canceled && result.assets[0]) {
-      //   const selectedAsset = result.assets[0];
-      //   handleImageSelection(selectedAsset.uri);
-      // }
-    } catch (error) {
-      console.error('갤러리 이미지 선택 실패:', error);
-      Alert.alert('오류', '이미지 선택에 실패했습니다.');
-    }
-  };
-
-  // 카메라로 사진 촬영 (더미 데이터)
-  const takePhotoWithCamera = async () => {
-    try {
-      // 더미 카메라 이미지
-      const dummyCameraImage = 'https://via.placeholder.com/400x300/2ecc71/ffffff?text=Camera+Photo';
-      
-      // 시뮬레이션을 위한 딜레이
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      handleImageSelection(dummyCameraImage);
-    } catch (error) {
-      console.error('카메라 촬영 실패:', error);
-      Alert.alert('오류', '사진 촬영에 실패했습니다.');
-    }
-  };
-
-  // 이미지 업로드 함수 (서버에 실제 업로드)
-  const uploadImageToServer = async (imageUri: string) => {
-    try {
-      console.log('서버 이미지 업로드 시작:', imageUri);
-      
-      const formData = new FormData();
-      const filename = `challenge_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.jpg`;
-
-      formData.append('file', {
-        uri: imageUri,
-        name: filename,
-        type: 'image/jpeg',
-      } as any);
-
-      console.log('서버 업로드 요청:', `${API_BASE_URL}/upload/image`);
-      const response = await fetch(`${API_BASE_URL}/upload/image`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      console.log('서버 응답 상태:', response.status);
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('서버 업로드 성공:', data);
-        
-        return data; // { success: true, filename, url, localPath, size, contentType }
-      } else {
-        const errorText = await response.text();
-        console.log('서버 업로드 실패:', response.status, errorText);
-        return null;
-      }
-    } catch (error) {
-      console.error('서버 업로드 중 오류:', error);
-      return null;
-    }
-  };
-
-  // 이미지 선택 완료 핸들러 (카메라/갤러리 공통)
-  const handleImageSelection = async (imageUri: string) => {
-    if (!selected) return;
-    
-    // 해당 챌린지에만 이미지 저장
-    setCapturedImages(prev => ({ ...prev, [selected.id.toString()]: imageUri }));
-    setShowImageOptions(false);
-    setShowCamera(false);
-    
-    // 업로딩 상태 설정
-    setUploadingImages(prev => ({ ...prev, [selected.id.toString()]: true }));
-    
-    // 실제 서버 업로드 및 DB 저장
-    try {
-      // 1단계: 서버에 이미지 업로드
-      const uploadResult = await uploadImageToServer(imageUri);
-      
-      if (uploadResult && selected) {
-        console.log('이미지 업로드 성공:', uploadResult.url);
-        
-        // 2단계: 챌린지 참여 기록을 DB에 저장
-        console.log('챌린지 참여 기록 저장 시작...');
-        const challengeRecord = await challengeApi.saveChallengeActivity(
-          selected.id,
-          uploadResult.url,
-          {
-            challengeTitle: selected.title,
-            points: selected.points,
-            challengeType: selected.challengeType
-          }
-        );
-        
-        if (challengeRecord) {
-          console.log('챌린지 참여 기록 저장 성공:', challengeRecord);
-          
-          // 서버에서 받은 이미지 URL을 임시 저장 (인증 대기 상태)
-          setPendingImages(prev => ({ ...prev, [selected.id.toString()]: uploadResult.url }));
-          setUploadingImages(prev => ({ ...prev, [selected.id.toString()]: false }));
-          // setSelectedId(null); // 모달을 닫지 않음 - 사용자가 인증 완료 버튼을 누를 수 있도록 함
-          
-          Alert.alert('사진 업로드 완료!', '사진이 업로드되었습니다.\n\n이제 "인증 완료" 버튼을 눌러 AI 검증을 시작하세요!');
-        } else {
-          throw new Error('챌린지 참여 기록 저장에 실패했습니다.');
-        }
-      } else {
-        setUploadingImages(prev => ({ ...prev, [selected.id.toString()]: false }));
-        Alert.alert('오류', '이미지 업로드에 실패했습니다. 네트워크 연결을 확인해 주세요.');
-      }
-    } catch (error) {
-      setUploadingImages(prev => ({ ...prev, [selected.id.toString()]: false }));
-      console.error('챌린지 참여 중 오류:', error);
-      Alert.alert('오류', `챌린지 참여 중 오류가 발생했습니다.\n\n${error instanceof Error ? error.message : '알 수 없는 오류'}`);
-    }
-  };
-
-  // 이미지 캡처 완료 핸들러 (기존 CameraCapture 컴포넌트용)
-  const handleImageCapture = (imageUri: string) => {
-    handleImageSelection(imageUri);
+  const startAIVerification = async (challengeId: number, imageUrl: string): Promise<boolean> => {
+    // 임시로 성공 처리
+    return true;
   };
 
   // 이미지 URL 연결 테스트 함수
   const testImageUrl = async (imageUrl: string) => {
     try {
-      console.log(`이미지 URL 연결 테스트 시작: ${imageUrl}`);
-      const response = await fetch(imageUrl, { method: 'HEAD' });
-      console.log(`이미지 URL 응답 상태: ${response.status}`);
-      console.log(`이미지 URL 응답 헤더:`, response.headers);
+      console.log(`🔍 이미지 URL 연결 테스트 시작: ${imageUrl}`);
+      
+      // 타임아웃 설정 (5초)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      const response = await fetch(imageUrl, { 
+        method: 'HEAD',
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      console.log(`🔍 이미지 URL 응답 상태: ${response.status}`);
       
       if (response.ok) {
         console.log('✅ 이미지 URL 접근 가능');
         return true;
       } else {
-        console.log('❌ 이미지 URL 접근 실패:', response.status, response.statusText);
+        console.log(`❌ 이미지 URL 접근 실패: ${response.status}`);
         return false;
       }
     } catch (error) {
-      console.error('❌ 이미지 URL 연결 테스트 실패:', error);
+      console.error('❌ 이미지 URL 테스트 실패:', error);
       return false;
     }
+  };
+
+  const getChallengeState = (challengeId: number) => {
+    const challengeIdStr = challengeId.toString();
+    let state: 'NOT_PARTICIPATED' | 'PARTICIPATED' | 'PENDING' | 'VERIFYING' | 'APPROVED' | 'REJECTED' | 'NEEDS_REVIEW' = 'NOT_PARTICIPATED';
+    
+    // participationStatus나 teamChallengeStatus를 우선적으로 확인
+    const currentParticipationStatus = participationStatus[challengeIdStr];
+    const currentTeamChallengeStatus = teamChallengeStatus[challengeIdStr];
+    
+    if (currentParticipationStatus && currentParticipationStatus !== 'NOT_PARTICIPATED') {
+      state = currentParticipationStatus as any;
+    } else if (currentTeamChallengeStatus && currentTeamChallengeStatus !== 'NOT_STARTED') {
+      state = currentTeamChallengeStatus as any;
+    } else if (completed[challengeIdStr]) {
+      state = 'APPROVED';
+    } else if (verifyingChallenges[challengeIdStr]) {
+      state = 'VERIFYING';
+    } else if (capturedImages[challengeIdStr]) {
+      state = 'PENDING';
+    } else if (participatedChallenges[challengeIdStr]) {
+      state = 'PARTICIPATED';
+    }
+    
+    return {
+      state,
+      teamState: undefined,
+      imageUrl: capturedImages[challengeIdStr] ? fixImageUrl(capturedImages[challengeIdStr]) : undefined,
+      aiResult: aiResults[challengeIdStr],
+      isUploading: uploadingImages[challengeIdStr],
+      isVerifying: verifyingChallenges[challengeIdStr]
+    };
+  };
+
+  const shouldShowImageUpload = (challenge: LocalChallenge) => {
+    const challengeIdStr = challenge.id.toString();
+    const isParticipated = participatedChallenges[challengeIdStr] || 
+                          participationStatus[challengeIdStr] === 'PARTICIPATED' ||
+                          (challenge.isTeamChallenge && teamChallengeStatus[challengeIdStr] === 'LEADER_PARTICIPATED');
+    
+    return isParticipated && !completed[challengeIdStr] && !aiResults[challengeIdStr];
+  };
+
+  const shouldShowAIResults = (challenge: LocalChallenge) => {
+    const challengeIdStr = challenge.id.toString();
+    return !!aiResults[challengeIdStr];
+  };
+
+  const shouldShowTeamInfo = (challenge: LocalChallenge) => {
+    return challenge.isTeamChallenge && teamInfo;
+  };
+
+  // 챌린지 참여하기 버튼 클릭 핸들러
+  const handleChallengePress = async (challenge: LocalChallenge) => {
+    const challengeId = challenge.id.toString();
+    
+    // 이미 참여한 챌린지인 경우 상세 모달 표시
+    if (participatedChallenges[challengeId] || completed[challengeId] || aiResults[challengeId]) {
+      setSelectedId(challengeId);
+      return;
+    }
+
+    // 팀 챌린지인 경우 상세 모달만 표시 (참여는 버튼 클릭 시에만)
+    if (challenge.isTeamChallenge) {
+      // 팀 정보가 없으면 다시 가져오기
+      if (!teamInfo) {
+        try {
+          await loadTeamInfo();
+        } catch (error) {
+          console.error('팀 정보 가져오기 실패:', error);
+        }
+      }
+      setSelectedId(challengeId);
+      return;
+    }
+
+    // 개인 챌린지인 경우 바로 상세 모달 표시
+    setSelectedId(challengeId);
+  };
+
+  // 이미지 선택 완료 핸들러
+  const handleImageSelection = async (imageUri: string) => {
+    if (!selected) return;
+    
+    const challengeIdStr = selected.id.toString();
+    
+    // 업로드 상태 설정
+    setUploadingImages(prev => ({ ...prev, [challengeIdStr]: true }));
+    
+    try {
+      // 실제 이미지 업로드 API 호출
+      const uploadResult = await challengeApi.saveChallengeActivity(selected.id, imageUri);
+      
+      if (uploadResult) {
+        // 서버에 업로드된 이미지 URL 사용 (uploadResult.imageUrl 또는 imageUri)
+        const serverImageUrl = uploadResult.imageUrl || imageUri;
+        
+        // 해당 챌린지에만 이미지 저장 (로컬 URI는 화면 표시용, 서버 URL은 AI 검증용)
+        setCapturedImages(prev => ({ ...prev, [challengeIdStr]: imageUri })); // 화면 표시용 로컬 URI
+        
+        // pendingImages에는 서버 URL 저장 (AI 검증용)
+        setPendingImages(prev => ({ ...prev, [challengeIdStr]: serverImageUrl }));
+        
+        // 상태를 PENDING으로 업데이트 (이미지 업로드 완료, AI 검증 대기)
+        if (selected.isTeamChallenge) {
+          setTeamChallengeStatus(prev => {
+            const newState = { ...prev, [challengeIdStr]: 'PENDING' };
+            console.log('팀 챌린지 상태 업데이트:', newState);
+            return newState;
+          });
+        } else {
+          setParticipationStatus(prev => {
+            const newState = { ...prev, [challengeIdStr]: 'PENDING' };
+            console.log('개인 챌린지 상태 업데이트:', newState);
+            return newState;
+          });
+        }
+        
+        console.log('이미지 업로드 성공:', { 
+          challengeId: challengeIdStr, 
+          localUri: imageUri,
+          serverUrl: serverImageUrl,
+          newStatus: 'PENDING',
+          isTeamChallenge: selected.isTeamChallenge
+        });
+      }
+    } catch (error) {
+      console.error('이미지 업로드 실패:', error);
+      
+      // 중복 이미지 에러인지 확인
+      if (error instanceof Error && error.message.includes('중복된 이미지')) {
+        Alert.alert(
+          '⚠️ 중복 이미지 감지', 
+          '이미 사용된 이미지입니다.\n\n다른 사진을 촬영하거나 갤러리에서 새로운 이미지를 선택해주세요.', 
+          [{ text: '확인' }]
+        );
+      } else {
+        Alert.alert('업로드 실패', '이미지 업로드에 실패했습니다. 다시 시도해주세요.', [{ text: '확인' }]);
+      }
+    } finally {
+      // 업로드 상태 해제
+      setUploadingImages(prev => ({ ...prev, [challengeIdStr]: false }));
+    }
+    
+    setShowImageOptions(false);
+    setShowCamera(false);
   };
 
   // AI 검증 시작 함수
@@ -667,66 +675,188 @@ export default function EcoChallengeScreen({ onBack, onShowHistory, onShowComple
     const challengeIdStr = challengeId.toString();
     
     try {
-      console.log('🤖 AI 검증 시작:', { challengeId, imageUrl });
+      // 상태 검증: 이미지가 업로드되었는지 확인
+      if (!imageUrl || imageUrl.trim() === '') {
+        Alert.alert('오류', '인증 사진이 없습니다. 먼저 사진을 업로드해주세요.', [{ text: '확인' }]);
+        return;
+      }
       
-      // 검증 진행 상태 설정
-      setVerifyingChallenges(prev => ({ ...prev, [challengeIdStr]: true }));
+      // 상태 검증: 챌린지 참여 상태 확인
+      const selected = challenges.find(c => c.id === challengeId);
+      if (!selected) {
+        Alert.alert('오류', '챌린지 정보를 찾을 수 없습니다.', [{ text: '확인' }]);
+        return;
+      }
       
-      // AI 검증 시작 (이미 저장된 챌린지 기록에 대해)
-      const verificationResult = await challengeApi.startAiVerification(challengeId);
-      
-      console.log('🤖 AI 검증 결과:', verificationResult);
-      
-      if (verificationResult) {
-        // AI 검증 결과 저장
-        console.log('🤖 AI 결과 저장 중:', { challengeId: challengeIdStr, result: verificationResult });
-        setAiResults(prev => {
-          const newResults = { ...prev, [challengeIdStr]: verificationResult };
-          console.log('🤖 AI 결과 저장 완료:', newResults);
-          return newResults;
-        });
-        
-        // AI 검증 결과에 따른 처리
-        if (verificationResult.verificationStatus === 'APPROVED') {
-          // 즉시 상태 업데이트
-          setCompleted((prev) => ({ ...prev, [challengeIdStr]: true }));
-          setParticipationStatus((prev) => ({ ...prev, [challengeIdStr]: 'VERIFIED' }));
-          setCapturedImages(prev => ({ ...prev, [challengeIdStr]: imageUrl }));
-          setPendingImages(prev => {
-            const newState = { ...prev };
-            delete newState[challengeIdStr];
-            return newState;
-          });
-          
-          // 상태 업데이트 후 잠시 대기하여 UI가 반영되도록 함
-          setTimeout(async () => {
-            // 챌린지 데이터 새로고침으로 최신 상태 반영
-            await refreshChallenges();
-            setSelectedId(null); // 성공 시에만 모달 닫기
-            Alert.alert('🎉 인증 완료!', `축하합니다! ${verificationResult.message}\n\n+${selected?.points || 0} 씨앗을 획득했습니다!`);
-          }, 100);
-        } else if (verificationResult.verificationStatus === 'NEEDS_REVIEW') {
-          setParticipationStatus((prev) => ({ ...prev, [challengeIdStr]: 'PENDING' }));
-          Alert.alert('🟡 검토 필요', verificationResult.message);
-        } else if (verificationResult.verificationStatus === 'REJECTED') {
-          setParticipationStatus((prev) => ({ ...prev, [challengeIdStr]: 'REJECTED' }));
-          Alert.alert('❌ 인증 실패', verificationResult.message);
+      // 팀 챌린지인 경우 팀장 참여 상태 확인
+      if (selected.isTeamChallenge) {
+        const teamStatus = teamChallengeStatus[challengeIdStr];
+        if (!teamStatus || teamStatus === 'NOT_STARTED') {
+          Alert.alert('오류', '팀 챌린지에 먼저 참여해주세요.', [{ text: '확인' }]);
+          return;
         }
       } else {
-        console.log('🤖 AI 검증 결과가 null입니다');
-        Alert.alert('오류', 'AI 검증에 실패했습니다. 다시 시도해 주세요.');
+        // 개인 챌린지인 경우 참여 상태 확인
+        const currentParticipationStatus = participationStatus[challengeIdStr];
+        if (!currentParticipationStatus || currentParticipationStatus === 'NOT_PARTICIPATED') {
+          Alert.alert('오류', '챌린지에 먼저 참여해주세요.', [{ text: '확인' }]);
+          return;
+        }
+      }
+      
+      console.log('🔍 AI 검증 시작 전 상태 확인:', {
+        challengeId,
+        imageUrl: !!imageUrl,
+        isTeamChallenge: selected.isTeamChallenge,
+        teamStatus: selected.isTeamChallenge ? teamChallengeStatus[challengeIdStr] : null,
+        participationStatus: !selected.isTeamChallenge ? participationStatus[challengeIdStr] : null
+      });
+      
+      setVerifyingChallenges(prev => ({ ...prev, [challengeIdStr]: true }));
+      
+      console.log('🚀 AI 검증 API 호출 시작:', {
+        challengeId,
+        challengeTitle: selected.title,
+        isTeamChallenge: selected.isTeamChallenge,
+        imageUrl: imageUrl.substring(0, 50) + '...' // URL 일부만 로그
+      });
+      
+      // AI 검증 시작
+      const verificationResult = await challengeApi.startAiVerification(challengeId);
+      
+      if (verificationResult) {
+        console.log('🔍 AI 검증 시작됨:', verificationResult);
+        
+        // AI 검증 완료까지 폴링 (안드로이드 최적화)
+        const pollForResult = async () => {
+          let attempts = 0;
+          const maxAttempts = 15; // 최대 30초 대기 (안드로이드에서 더 오래 걸릴 수 있음)
+          const pollInterval = Platform.OS === 'android' ? 3000 : 2000; // 안드로이드는 3초, iOS는 2초
+          
+          const poll = async () => {
+            try {
+              attempts++;
+              console.log(`🔄 AI 검증 상태 확인 중... (${attempts}/${maxAttempts}) [${Platform.OS}]`);
+              
+              const participations = await challengeApi.getMyChallengeParticipations();
+              const latestParticipation = participations.find(p => p.challenge.id === challengeId);
+              
+              console.log('📋 현재 참여 상태:', {
+                challengeId,
+                found: !!latestParticipation,
+                status: latestParticipation?.verificationStatus,
+                hasImage: !!latestParticipation?.imageUrl
+              });
+              
+              if (latestParticipation && 
+                  (latestParticipation.verificationStatus === 'APPROVED' || 
+                   latestParticipation.verificationStatus === 'REJECTED' ||
+                   latestParticipation.verificationStatus === 'NEEDS_REVIEW')) {
+                
+                console.log('📊 AI 검증 완료!', {
+                  status: latestParticipation.verificationStatus,
+                  confidence: latestParticipation.aiConfidence,
+                  explanation: latestParticipation.aiExplanation,
+                  detectedItems: latestParticipation.aiDetectedItems
+                });
+                
+                // AI 검증 결과 저장
+                const aiResult = {
+                  verificationStatus: latestParticipation.verificationStatus,
+                  confidence: latestParticipation.aiConfidence || 0.95,
+                  explanation: latestParticipation.aiExplanation || 'AI 검증이 완료되었습니다.',
+                  aiDetectedItems: latestParticipation.aiDetectedItems ? 
+                    (typeof latestParticipation.aiDetectedItems === 'string' ? 
+                      latestParticipation.aiDetectedItems.split(',').map(item => item.trim()) : 
+                      latestParticipation.aiDetectedItems) : []
+                };
+                
+                setAiResults(prev => ({ ...prev, [challengeIdStr]: aiResult }));
+                
+                // AI 검증 결과에 따른 처리
+                if (latestParticipation.verificationStatus === 'APPROVED') {
+                  setCompleted(prev => ({ ...prev, [challengeIdStr]: true }));
+                  setParticipatedChallenges(prev => ({ ...prev, [challengeIdStr]: true }));
+                  
+                  setPendingImages(prev => {
+                    const newState = { ...prev };
+                    delete newState[challengeIdStr];
+                    return newState;
+                  });
+                  
+                  Alert.alert(
+                    '챌린지 완료!',
+                    `챌린지가 성공적으로 완료되었습니다!\n${latestParticipation.pointsAwarded ? `${latestParticipation.pointsAwarded}개의 씨앗을 받았습니다!` : ''}`,
+                    [{ text: '확인', style: 'default' }]
+                  );
+                } else if (latestParticipation.verificationStatus === 'REJECTED') {
+                  // 중복 이미지인지 확인
+                  const isDuplicateImage = latestParticipation.aiExplanation?.includes('이전에 사용한 이미지') || 
+                                         latestParticipation.aiExplanation?.includes('중복된 이미지');
+                  
+                  if (isDuplicateImage) {
+                    Alert.alert(
+                      '⚠️ 중복 이미지 감지',
+                      '이미 사용된 이미지입니다.\n\n다른 사진을 촬영하거나 갤러리에서 새로운 이미지를 선택해주세요.',
+                      [{ text: '확인', style: 'default' }]
+                    );
+                  } else {
+                    Alert.alert(
+                      '챌린지 실패',
+                      latestParticipation.aiExplanation || '챌린지 검증이 완료되었습니다.',
+                      [{ text: '확인', style: 'default' }]
+                    );
+                  }
+                } else if (latestParticipation.verificationStatus === 'NEEDS_REVIEW') {
+                  Alert.alert(
+                    '검토 대기',
+                    'AI 검증이 완료되었습니다. 관리자 검토 후 포인트가 적립됩니다.',
+                    [{ text: '확인', style: 'default' }]
+                  );
+                }
+                
+                return; // 폴링 종료
+              }
+              
+              // 아직 검증이 완료되지 않았고 최대 시도 횟수에 도달하지 않았다면 계속 폴링
+              if (attempts < maxAttempts) {
+                console.log(`⏳ ${pollInterval/1000}초 후 다시 확인...`);
+                setTimeout(poll, pollInterval);
+              } else {
+                console.log('⏰ AI 검증 타임아웃');
+                Alert.alert(
+                  '검증 대기', 
+                  `AI 검증이 시간이 오래 걸리고 있습니다.\n\n${Platform.OS === 'android' ? '안드로이드에서는 검증이 더 오래 걸릴 수 있습니다.' : ''}\n잠시 후 다시 확인해주세요.`, 
+                  [{ text: '확인' }]
+                );
+              }
+            } catch (error) {
+              console.error('AI 검증 상태 확인 실패:', error);
+              if (attempts < maxAttempts) {
+                console.log(`🔄 에러 발생, ${pollInterval/1000}초 후 재시도...`);
+                setTimeout(poll, pollInterval);
+              } else {
+                console.log('⏰ 최대 재시도 횟수 초과');
+                Alert.alert('검증 실패', 'AI 검증 상태를 확인할 수 없습니다. 네트워크 연결을 확인하고 다시 시도해주세요.', [{ text: '확인' }]);
+              }
+            }
+          };
+          
+          poll();
+        };
+        
+        pollForResult();
       }
     } catch (error) {
-      console.error('🤖 AI 검증 중 오류:', error);
-      Alert.alert('오류', `AI 검증 중 오류가 발생했습니다.\n\n${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+      console.error('AI 검증 실패:', error);
+      Alert.alert('검증 실패', 'AI 검증 중 오류가 발생했습니다. 다시 시도해주세요.', [{ text: '확인' }]);
     } finally {
-      // 검증 완료 후 로딩 상태 해제
       setVerifyingChallenges(prev => ({ ...prev, [challengeIdStr]: false }));
     }
   };
 
-  // 걸음수 챌린지 완료 핸들러
-  const handleStepsChallengeComplete = async () => {
+  // 걸음수 제출 함수
+  const handleStepsSubmit = async () => {
     if (!selected) return;
     
     try {
@@ -735,21 +865,35 @@ export default function EcoChallengeScreen({ onBack, onShowHistory, onShowComple
         date: new Date().toISOString().split('T')[0]
       };
       
-      await submitWalkingSteps(request);
-      setCompleted((prev) => ({ ...prev, [selected.id.toString()]: true }));
-      setParticipationStatus((prev) => ({ ...prev, [selected.id.toString()]: 'VERIFIED' }));
-      setShowStepsModal(false);
-      setSelectedId(null);
-      Alert.alert('인증 완료!', `${selected.points}개의 씨앗을 받았습니다!`);
-    } catch (error) {
-      console.error('걸음수 챌린지 완료 실패:', error);
-      Alert.alert('오류', '챌린지 완료에 실패했습니다.');
+      const result = await submitWalkingSteps(request);
+      
+      if (result) {
+        setCompleted(prev => ({ ...prev, [selected.id.toString()]: true }));
+        setShowStepsModal(false);
+        Alert.alert('챌린지 완료!', '걸음수 챌린지가 완료되었습니다!', [{ text: '확인' }]);
+      }
+    } catch (error: any) {
+      console.error('걸음수 제출 실패:', error);
+      
+      // 409 에러는 이미 오늘 제출한 기록이 있는 경우
+      if (error.message && error.message.includes('409')) {
+        Alert.alert(
+          '이미 제출됨', 
+          '오늘은 이미 걸음수를 제출했습니다.\n챌린지가 완료되었습니다!', 
+          [{ text: '확인' }]
+        );
+        // 409 에러여도 챌린지는 완료된 것으로 처리
+        setCompleted(prev => ({ ...prev, [selected.id.toString()]: true }));
+        setShowStepsModal(false);
+      } else {
+        Alert.alert('제출 실패', '걸음수 제출 중 오류가 발생했습니다.', [{ text: '확인' }]);
+      }
     }
   };
 
   return (
     <View style={styles.container}>
-        <TopBar title="에코 챌린지" onBack={onBack} />
+      <TopBar title="에코 챌린지" onBack={onBack} />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* 헤더 섹션 */}
@@ -774,52 +918,63 @@ export default function EcoChallengeScreen({ onBack, onShowHistory, onShowComple
             <Text style={styles.emptyText}>새로운 챌린지가 곧 추가될 예정입니다!</Text>
           </View>
         ) : (
-          challenges.map((c) => (
-            <Pressable 
-              key={c.id} 
-              style={styles.challengeItem} 
-              onPress={() => handleChallengePress(c)}
-            >
-              <View style={styles.challengeIconContainer}>
-                <Image source={c.icon} style={styles.challengeIcon} />
-              </View>
-              <View style={styles.challengeInfo}>
-                <View style={styles.challengeTitleRow}>
-                  <Text style={styles.challengeTitle}>{c.title}</Text>
-                  <View style={styles.badgeContainer}>
-                    {c.isTeamChallenge && (
-                      <View style={styles.teamBadge}>
-                        <Text style={styles.teamBadgeText}>TEAM</Text>
-                      </View>
-                    )}
-                    {c.isLeaderOnly && (
-                      <View style={styles.leaderBadge}>
-                        <Ionicons name="star" size={12} color="#F59E0B" />
-                        <Text style={styles.leaderBadgeText}>팀장</Text>
-                      </View>
-                    )}
-                  </View>
+          challenges.map((c) => {
+            const challengeId = c.id.toString();
+            const isCompleted = completed[challengeId] || aiResults[challengeId] || c.isParticipated;
+            const challengeState = getChallengeState(c.id);
+            
+            return (
+              <Pressable 
+                key={c.id} 
+                style={styles.challengeItem} 
+                onPress={() => handleChallengePress(c)}
+              >
+                <View style={styles.challengeIconContainer}>
+                  <Image source={c.icon} style={styles.challengeIcon} />
                 </View>
-                {/* <Text style={styles.challengeDescription}>{c.description}</Text> */}
-              </View>
-              <View style={styles.challengeReward}>
-                <Text style={styles.challengeRewardText}>
-                  {c.isTeamChallenge 
-                    ? `+${c.teamScore || 0} P` 
-                    : `+${c.points} 씨앗`
-                  }
-                </Text>
-                {(completed[c.id.toString()] || 
-                  aiResults[c.id.toString()] ||
-                  c.isParticipated) && (
-                  <View style={styles.completedIndicator}>
-                    <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+                <View style={styles.challengeInfo}>
+                  <View style={styles.challengeTitleRow}>
+                    <Text style={styles.challengeTitle}>{c.title}</Text>
+                    <View style={styles.badgeContainer}>
+                      {c.isTeamChallenge && (
+                        <View style={styles.teamBadge}>
+                          <Text style={styles.teamBadgeText}>TEAM</Text>
+                        </View>
+                      )}
+                      {c.isLeaderOnly && (
+                        <View style={styles.leaderBadge}>
+                          <Ionicons name="star" size={12} color="#F59E0B" />
+                          <Text style={styles.leaderBadgeText}>팀장</Text>
+                        </View>
+                      )}
+                    </View>
                   </View>
-                )}
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-            </Pressable>
-          ))
+                  {/* <Text style={styles.challengeDescription}>{c.description}</Text> */}
+                </View>
+                <View style={styles.challengeReward}>
+                  <Text style={styles.challengeRewardText}>
+                    {c.isTeamChallenge 
+                      ? `+${c.teamScore || 0} P` 
+                      : `+${c.points} 씨앗`
+                    }
+                  </Text>
+                  {(completed[c.id.toString()] || 
+                    aiResults[c.id.toString()] ||
+                    c.isParticipated) && (
+                    <View style={styles.completedIndicator}>
+                      <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+                    </View>
+                  )}
+                  {participatedChallenges[c.id.toString()] && !completed[c.id.toString()] && !aiResults[c.id.toString()] && (
+                    <View style={styles.participatedIndicator}>
+                      <Text style={styles.participatedText}>도전중</Text>
+                    </View>
+                  )}
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+              </Pressable>
+            );
+          })
         )}
 
         {/* 참여한 챌린지 내역 섹션 */}
@@ -829,10 +984,8 @@ export default function EcoChallengeScreen({ onBack, onShowHistory, onShowComple
             onPress={() => {
               if (onShowSeedHistory) {
                 onShowSeedHistory();
-              } else if (onShowCompletedChallenges) {
-                onShowCompletedChallenges();
               } else {
-                Alert.alert('참여한 챌린지', '참여한 챌린지 내역을 확인할 수 있습니다.');
+                Alert.alert('참여한 챌린지', '참여한 챌린지 내역을 확인할 수 있습니다.', [{ text: '확인' }]);
               }
             }}
           >
@@ -859,10 +1012,12 @@ export default function EcoChallengeScreen({ onBack, onShowHistory, onShowComple
         <View style={{ height: 80 * SCALE }} />
       </ScrollView>
 
+      {/* 챌린지 상세 모달 */}
       {selected && (
-        <View style={styles.overlay}>
-          <Pressable style={styles.backdrop} onPress={() => setSelectedId(null)} />
-          <View style={styles.sheet}>
+        <Modal visible={!!selected} transparent animationType="slide">
+          <View style={styles.overlay}>
+            <Pressable style={styles.backdrop} onPress={() => setSelectedId(null)} />
+            <View style={styles.sheet}>
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>{selected.title}</Text>
             </View>
@@ -896,13 +1051,181 @@ export default function EcoChallengeScreen({ onBack, onShowHistory, onShowComple
                   <Text style={styles.sectionText}>{selected.rewardDesc}</Text>
               </View>
               )}
-          
+              {/* 챌린지 기간 정보 */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>챌린지 기간</Text>
+                <Text style={styles.sectionText}>
+                  {selected.startDate && selected.endDate 
+                    ? `${selected.startDate.split('T')[0].replace(/-/g, '.')}-${selected.endDate.split('T')[0].replace(/-/g, '.')}`
+                    : '상시 진행'
+                  }
+                </Text>
+              </View>
+
+              {/* 챌린지 완료 날짜 (완료된 경우에만 표시) */}
+              {(() => {
+                const currentParticipationStatus = participationStatus[selected.id.toString()];
+                const isCompleted = currentParticipationStatus === 'APPROVED' || currentParticipationStatus === 'REJECTED';
+                
+                if (isCompleted && aiResults[selected.id.toString()]) {
+                  const aiResult = aiResults[selected.id.toString()];
+                  const completionDate = aiResult.verifiedAt;
+                  
+                  if (completionDate) {
+                    return (
+                      <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>완료 날짜</Text>
+                        <Text style={styles.sectionText}>
+                          {new Date(completionDate).toLocaleDateString('ko-KR')}
+                        </Text>
+                      </View>
+                    );
+                  }
+                }
+                return null;
+              })()}
+              {/* 팀 정보 섹션 (팀 챌린지이고 참여한 경우) */}
+              {(() => {
+                const currentTeamChallengeStatus = teamChallengeStatus[selected.id.toString()];
+                const hasParticipated = currentTeamChallengeStatus && currentTeamChallengeStatus !== 'NOT_STARTED';
+                const showTeamInfo = selected.isTeamChallenge && 
+                 teamInfo && 
+                 (hasParticipated || aiResults[selected.id.toString()]);
+                
+                console.log('🔍 팀 정보 섹션 표시 조건:', {
+                  isTeamChallenge: selected.isTeamChallenge,
+                  hasTeamInfo: !!teamInfo,
+                  teamChallengeStatus: currentTeamChallengeStatus,
+                  hasParticipated,
+                  hasAiResults: !!aiResults[selected.id.toString()],
+                  showTeamInfo
+                });
+                
+                if (showTeamInfo) {
+                  return (
+                    <View style={styles.section}>
+                      <Text style={styles.sectionTitle}>팀 정보</Text>
+                      <Text style={styles.sectionText}>팀명: {teamInfo.name}</Text>
+                      <Text style={styles.sectionText}>팀원: {teamInfo.members}명</Text>
+                    </View>
+                  );
+                }
+                return null;
+              })()}
+
+              {/* 팀원용 인증 사진 표시 (팀 챌린지이고 팀원인 경우) */}
+              {(() => {
+                const currentTeamChallengeStatus = teamChallengeStatus[selected.id.toString()];
+                const hasParticipated = currentTeamChallengeStatus && currentTeamChallengeStatus !== 'NOT_STARTED';
+                const showTeamMemberImage = selected.challengeType === 'image' && 
+                  selected.isTeamChallenge && 
+                  userTeamRole === 'MEMBER' && 
+                  (hasParticipated || aiResults[selected.id.toString()]);
+                
+                console.log('🔍 팀원용 인증 사진 표시 조건:', {
+                  challengeType: selected.challengeType,
+                  isTeamChallenge: selected.isTeamChallenge,
+                  userTeamRole,
+                  currentTeamChallengeStatus,
+                  hasParticipated,
+                  hasAiResults: !!aiResults[selected.id.toString()],
+                  showTeamMemberImage
+                });
+                
+                if (showTeamMemberImage) {
+                  return (
+                    <View style={[styles.section, styles.imageSection]}>
+                      <Text style={styles.sectionTitle}>팀장의 인증 사진</Text>
+                      <View style={styles.completedImageContainer}>
+                        {(() => {
+                          const rawImageUrl = capturedImages[selected.id.toString()] || pendingImages[selected.id.toString()];
+                          const imageUrl = rawImageUrl ? fixImageUrl(rawImageUrl) : null;
+                          console.log(`팀원용 챌린지 ${selected.id} 이미지 표시 체크:`, {
+                            capturedImage: capturedImages[selected.id.toString()],
+                            pendingImage: pendingImages[selected.id.toString()],
+                            rawImageUrl,
+                            imageUrl
+                          });
+                          
+                          if (imageUrl) {
+                            return (
+                              <Image 
+                                source={{ uri: imageUrl }} 
+                                style={styles.completedImage}
+                                resizeMode="contain"
+                                onError={(error) => {
+                                  console.error(`팀원용 이미지 로드 실패 (${imageUrl}):`, error);
+                                }}
+                                onLoad={() => {
+                                  console.log(`팀원용 이미지 로드 성공: ${imageUrl}`);
+                                }}
+                              />
+                            );
+                          } else {
+                            return (
+                              <View style={styles.noImagePlaceholder}>
+                                <Ionicons name="camera" size={48 * SCALE} color="#9CA3AF" />
+                                <Text style={styles.noImageText}>팀장이 아직 인증 사진을 업로드하지 않았습니다.</Text>
+                                <Text style={[styles.noImageText, { fontSize: 12, marginTop: 4 }]}>
+                                  ID: {selected.id}
+                                </Text>
+                              </View>
+                            );
+                          }
+                        })()}
+                        
+                        {completed[selected.id] && (
+                          <View style={styles.completedImageOverlay}>
+                            <Ionicons name="checkmark-circle" size={32} color="#10B981" />
+                            <Text style={styles.completedImageText}>인증 완료</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  );
+                }
+                return null;
+              })()}
               
-              {/* 이미지 업로드 섹션 (이미지 챌린지인 경우) */}
-              {selected.challengeType === 'image' && (
+              {/* 이미지 업로드 섹션 (이미지 챌린지인 경우, 팀장만 표시) */}
+              {(() => {
+                const currentParticipationStatus = participationStatus[selected.id.toString()];
+                const currentTeamChallengeStatus = teamChallengeStatus[selected.id.toString()];
+                
+                // 팀 챌린지와 개인 챌린지의 참여 상태를 구분하여 확인
+                const hasParticipated = selected.isTeamChallenge 
+                  ? (currentTeamChallengeStatus && currentTeamChallengeStatus !== 'NOT_STARTED')
+                  : (currentParticipationStatus && currentParticipationStatus !== 'NOT_PARTICIPATED');
+                
+                const showImageUpload = selected.challengeType === 'image' && (
+                  // 팀 챌린지인 경우: 팀장이고 참여 완료 후에만 표시
+                  (selected.isTeamChallenge && userTeamRole === 'LEADER' && 
+                   (hasParticipated || aiResults[selected.id.toString()])) || 
+                  // 개인 챌린지인 경우: 참여 완료 후에만 표시
+                  (!selected.isTeamChallenge && 
+                   (hasParticipated || aiResults[selected.id.toString()]))
+                );
+                
+                console.log('🔍 인증사진 업로드 섹션 표시 조건:', {
+                  challengeType: selected.challengeType,
+                  isTeamChallenge: selected.isTeamChallenge,
+                  userTeamRole,
+                  participationStatus: currentParticipationStatus,
+                  teamChallengeStatus: currentTeamChallengeStatus,
+                  hasParticipated,
+                  hasAiResults: !!aiResults[selected.id.toString()],
+                  showImageUpload,
+                  capturedImages: capturedImages[selected.id.toString()],
+                  pendingImages: pendingImages[selected.id.toString()],
+                  completed: completed[selected.id.toString()],
+                  participatedChallenges: participatedChallenges[selected.id.toString()]
+                });
+                
+                if (showImageUpload) {
+                  return (
                 <View style={[styles.section, styles.imageSection]}>
                   <Text style={styles.sectionTitle}>인증 사진</Text>
-                {!completed[selected.id.toString()] && !pendingImages[selected.id.toString()] && !capturedImages[selected.id.toString()] ? (
+                {!capturedImages[selected.id.toString()] && !pendingImages[selected.id.toString()] ? (
                 <ImageUploader
                   onImageSelected={handleImageSelection}
                   selectedImage={selected ? (capturedImages[selected.id.toString()] || pendingImages[selected.id.toString()]) : undefined}
@@ -913,74 +1236,75 @@ export default function EcoChallengeScreen({ onBack, onShowHistory, onShowComple
                   <View style={styles.completedImageContainer}>
                     {(() => {
                       const imageUrl = capturedImages[selected.id.toString()] || pendingImages[selected.id.toString()];
-                      console.log(`챌린지 ${selected.id} 이미지 표시 체크:`, {
-                        capturedImage: capturedImages[selected.id.toString()],
-                        pendingImage: pendingImages[selected.id.toString()],
-                        finalImageUrl: imageUrl,
-                        hasImage: !!imageUrl
-                      });
-                      
-                      return imageUrl ? (
-                        <View style={styles.imageWrapper}>
-                          <Image 
-                            source={{ 
-                              uri: imageUrl,
-                              cache: 'force-cache' // 캐시 강제 사용
-                            }} 
-                            style={styles.completedImage}
-                            resizeMode="contain"
-                            onError={(error) => {
-                              console.error(`이미지 로드 실패 (${imageUrl}):`, error);
-                              console.error('에러 상세:', error.nativeEvent);
-                            }}
-                            onLoad={() => {
-                              console.log(`이미지 로드 성공: ${imageUrl}`);
-                            }}
-                            onLoadStart={() => {
-                              console.log(`이미지 로드 시작: ${imageUrl}`);
-                              // 이미지 로드 시작 시 연결 테스트
-                              testImageUrl(imageUrl);
-                            }}
-                            onLoadEnd={() => {
-                              console.log(`이미지 로드 완료: ${imageUrl}`);
-                            }}
-                          />
-                          
-                          {/* 폴백 이미지 (로컬 이미지) */}
-                          <View style={styles.fallbackImageContainer}>
+                      if (imageUrl && typeof imageUrl === 'string' && imageUrl.trim() !== '') {
+                        try {
+                          const fixedImageUrl = fixImageUrl(imageUrl);
+                          console.log('🖼️ 이미지 표시:', { original: imageUrl, fixed: fixedImageUrl });
+                          return (
                             <Image 
-                              source={require('../../assets/hana3dIcon/hanaIcon3d_4_13.png')}
-                              style={styles.fallbackImage}
+                              source={{ uri: fixedImageUrl }} 
+                              style={styles.completedImage}
                               resizeMode="contain"
+                              onError={(error) => {
+                                console.error('❌ 이미지 로드 실패:', error.nativeEvent.error);
+                                console.error('❌ 이미지 URL:', fixedImageUrl);
+                                console.error('❌ 에러 상세:', error.nativeEvent);
+                                // 연결 테스트 실행
+                                testImageUrl(fixedImageUrl);
+                              }}
+                              onLoad={() => {
+                                console.log('✅ 이미지 로드 성공:', fixedImageUrl);
+                              }}
+                              onLoadStart={() => {
+                                console.log('🔄 이미지 로드 시작:', fixedImageUrl);
+                                // 이미지 로드 시작 시 연결 테스트
+                                testImageUrl(fixedImageUrl);
+                              }}
+                              onLoadEnd={() => {
+                                console.log('🏁 이미지 로드 완료:', fixedImageUrl);
+                              }}
                             />
-                            <Text style={styles.fallbackText}>인증 사진</Text>
+                          );
+                        } catch (error) {
+                          console.error('이미지 URL 처리 실패:', error);
+                          return (
+                            <View style={styles.noImagePlaceholder}>
+                              <Ionicons name="image-outline" size={48} color="#9CA3AF" />
+                              <Text style={styles.noImageText}>이미지 로드 실패</Text>
+                            </View>
+                          );
+                        }
+                      } else {
+                        return (
+                          <View style={styles.noImagePlaceholder}>
+                            <Ionicons name="image-outline" size={48} color="#9CA3AF" />
+                            <Text style={styles.noImageText}>이미지가 없습니다</Text>
                           </View>
-                        </View>
-                      ) : (
-                        <View style={styles.noImagePlaceholder}>
-                          <Ionicons name="camera" size={48 * SCALE} color="#9CA3AF" />
-                          <Text style={styles.noImageText}>인증 사진 없음</Text>
-                          <Text style={[styles.noImageText, { fontSize: 12, marginTop: 4 }]}>
-                            ID: {selected.id}
-                          </Text>
-                        </View>
-                      );
+                        );
+                      }
                     })()}
-                    {completed[selected.id] && (
+                    
+                    {/* {completed[selected.id] && (
                       <View style={styles.completedImageOverlay}>
                         <Ionicons name="checkmark-circle" size={32} color="#10B981" />
                         <Text style={styles.completedImageText}>인증 완료</Text>
                       </View>
-                    )}
+                    )} */}
                     
                   </View>
                 )}
                 </View>
-              )}
+              );
+                }
+                return null;
+              })()}
 
-              {/* AI 검증 결과 표시 - 이미지 챌린지에서 AI 분석 완료 시에만 표시 */}
+              {/* AI 검증 결과 섹션 */}
               {selected.challengeType === 'image' && 
-               aiResults[selected.id.toString()] && (
+               aiResults[selected.id.toString()] && 
+               aiResults[selected.id.toString()].verificationStatus && 
+               aiResults[selected.id.toString()].verificationStatus !== 'PENDING' && 
+               aiResults[selected.id.toString()].verificationStatus !== 'PARTICIPATED' && (
                 <View style={[styles.section, styles.aiResultSection]}>
                   <Text style={styles.sectionTitle}>AI 검증 결과</Text>
                     
@@ -992,19 +1316,24 @@ export default function EcoChallengeScreen({ onBack, onShowHistory, onShowComple
                       styles.aiResultValue,
                       aiResults[selected.id.toString()].verificationStatus === 'APPROVED' ? styles.aiResultSuccess :
                       aiResults[selected.id.toString()].verificationStatus === 'REJECTED' ? styles.aiResultError :
-                      styles.aiResultWarning
+                      styles.aiResultPending
                     ]}>
                       {aiResults[selected.id.toString()].verificationStatus === 'APPROVED' ? '✅ 승인' :
                        aiResults[selected.id.toString()].verificationStatus === 'REJECTED' ? '❌ 거부' :
-                       '🟡 검토 필요'}
+                       aiResults[selected.id.toString()].verificationStatus === 'NEEDS_REVIEW' ? '🟡 검토 필요' :
+                       aiResults[selected.id.toString()].verificationStatus}
                     </Text>
                   </View>
-                  <View style={styles.aiResultRow}>
-                    <Text style={styles.aiResultLabel}>신뢰도:</Text>
-                    <Text style={styles.aiResultValue}>
-                      {Math.round((aiResults[selected.id.toString()].confidence || 0) * 100)}%
-                    </Text>
-                  </View>
+                  
+                  {aiResults[selected.id.toString()].confidence && (
+                    <View style={styles.aiResultRow}>
+                      <Text style={styles.aiResultLabel}>신뢰도:</Text>
+                      <Text style={styles.aiResultValue}>
+                        {(aiResults[selected.id.toString()].confidence * 100).toFixed(1)}%
+                      </Text>
+                    </View>
+                  )}
+                  
                   {aiResults[selected.id.toString()].explanation && (
                     <View style={styles.aiResultRow}>
                       <Text style={styles.aiResultLabel}>설명:</Text>
@@ -1013,76 +1342,277 @@ export default function EcoChallengeScreen({ onBack, onShowHistory, onShowComple
                       </Text>
                     </View>
                   )}
-                  {aiResults[selected.id.toString()].detectedItems && (
+                  {aiResults[selected.id.toString()].aiDetectedItems && (
                     <View style={styles.aiResultRow}>
                       <Text style={styles.aiResultLabel}>감지 항목:</Text>
                       <Text style={styles.aiResultValue}>
-                        {Array.isArray(aiResults[selected.id.toString()].detectedItems) 
-                          ? aiResults[selected.id.toString()].detectedItems.join(', ')
-                          : aiResults[selected.id.toString()].detectedItems}
+                        {Array.isArray(aiResults[selected.id.toString()].aiDetectedItems) 
+                          ? aiResults[selected.id.toString()].aiDetectedItems.join(', ')
+                          : aiResults[selected.id.toString()].aiDetectedItems}
                       </Text>
                     </View>
                   )}
                 </View>
                 </View>
               )}
-              
-              <View style={{ height: 12 * SCALE }} />
+
+              {/* 버튼 섹션 */}
+              <View style={styles.buttonSection}>
+                {(() => {
+                  if (!completed[selected.id] && !aiResults[selected.id.toString()]) {
+                    // 팀 챌린지 조건 처리
+                    if (selected.isTeamChallenge) {
+                      // 팀 정보가 없는 경우
+                      if (!teamInfo) {
+                        return (
+                          <View style={[styles.primaryBtn, styles.primaryBtnDisabled]}>
+                            <Text style={styles.primaryBtnTextDisabled}>
+                              팀에 가입해주세요
+                            </Text>
+                          </View>
+                        );
+                      }
+                      
+                      // 팀 챌린지 상태에 따른 버튼 표시
+                      const challengeIdStr = selected.id.toString();
+                      const currentParticipationStatus = teamChallengeStatus[challengeIdStr];
+                      
+                      if (!currentParticipationStatus || currentParticipationStatus === 'NOT_STARTED') {
+                        // PENDING: 참여 신청도 안한 상태 - "팀 챌린지 참여하기" 버튼
+                        if (userTeamRole === 'LEADER') {
+                          return (
+                            <Pressable
+                              style={styles.primaryBtn}
+                              onPress={async () => {
+                                const participated = await participateInTeamChallenge(selected);
+                                if (participated) {
+                                  // 참여 성공 시 모달을 닫지 않고 그대로 유지하여 인증 섹션이 보이도록 함
+                                }
+                              }}
+                            >
+                              <Text style={styles.primaryBtnText}>
+                                팀 챌린지 참여하기
+                              </Text>
+                            </Pressable>
+                          );
+                        } else if (userTeamRole === 'MEMBER') {
+                          return (
+                            <View style={[styles.primaryBtn, styles.primaryBtnDisabled]}>
+                              <Text style={styles.primaryBtnTextDisabled}>
+                                팀장만 참여 가능
+                              </Text>
+                            </View>
+                          );
+                        } else {
+                          return (
+                            <View style={[styles.primaryBtn, styles.primaryBtnDisabled]}>
+                              <Text style={styles.primaryBtnTextDisabled}>
+                                팀 역할을 확인할 수 없습니다
+                              </Text>
+                            </View>
+                          );
+                        }
+                      } else if (currentParticipationStatus === 'LEADER_PARTICIPATED') {
+                        // LEADER_PARTICIPATED: 팀장이 참여신청만 한 상태 - 버튼 숨김 (이미지 업로드 섹션 표시)
+                        return null;
+                      } else if (currentParticipationStatus === 'PENDING') {
+                        // PENDING: 팀장이 인증사진 올렸고, AI 검증 대기 - "인증 완료하기" 버튼
+                        console.log('🔍 PENDING 상태 버튼 렌더링:', {
+                          challengeId: challengeIdStr,
+                          currentParticipationStatus,
+                          pendingImages: pendingImages[challengeIdStr],
+                          verifyingChallenges: verifyingChallenges[challengeIdStr],
+                          capturedImages: capturedImages[challengeIdStr]
+                        });
+                        
+                        return (
+                          <Pressable
+                            style={[
+                              styles.primaryBtn,
+                              (!pendingImages[challengeIdStr] || verifyingChallenges[challengeIdStr]) && styles.primaryBtnDisabled
+                            ]}
+                            disabled={!pendingImages[challengeIdStr] || verifyingChallenges[challengeIdStr]}
+                            onPress={() => {
+                              if (pendingImages[challengeIdStr] && !uploadingImages[challengeIdStr] && !verifyingChallenges[challengeIdStr]) {
+                                const challengeId = typeof selected.id === 'number' ? selected.id : parseInt(String(selected.id));
+                                handleAiVerification(challengeId, pendingImages[challengeIdStr]);
+                              }
+                            }}
+                          >
+                            <Text style={(!pendingImages[challengeIdStr] || verifyingChallenges[challengeIdStr]) ? styles.primaryBtnTextDisabled : styles.primaryBtnText}>
+                              {verifyingChallenges[challengeIdStr] ? 'AI 검증 중...' : 
+                               !pendingImages[challengeIdStr] ? '인증 사진을 먼저 업로드하세요' : 
+                               '인증 완료하기'}
+                            </Text>
+                          </Pressable>
+                        );
+                      } else if (currentParticipationStatus === 'AI_VERIFYING') {
+                        // VERIFYING: 팀장이 인증사진 올렸고, AI 검증 진행 중 - "AI 검증 중..." 버튼
+                        return (
+                          <View style={[styles.primaryBtn, styles.primaryBtnDisabled]}>
+                            <Text style={styles.primaryBtnTextDisabled}>
+                              AI 검증 중...
+                            </Text>
+                          </View>
+                        );
+                      } else if (currentParticipationStatus === 'COMPLETED') {
+                        // APPROVED/REJECTED: AI 검증 완료 - "참여완료" 버튼
+                        return (
+                          <View style={[styles.primaryBtn, styles.primaryBtnDisabled]}>
+                            <Text style={styles.primaryBtnTextDisabled}>
+                              참여완료
+                            </Text>
+                          </View>
+                        );
+                      }
+                    } else if (selected.challengeType === 'image') {
+                      // 개인 챌린지인 경우 - 팀 챌린지와 동일한 플로우 적용
+                      const challengeIdStr = selected.id.toString();
+                      const currentParticipationStatus = participationStatus[challengeIdStr];
+                      
+                      if (!currentParticipationStatus || currentParticipationStatus === 'NOT_PARTICIPATED') {
+                        // 참여하지 않은 상태 - "챌린지 참여하기" 버튼
+                        return (
+                          <Pressable
+                            style={styles.primaryBtn}
+                            onPress={async () => {
+                              const participated = await participateInPersonalChallenge(selected);
+                              if (participated) {
+                                // 참여 성공 시 모달을 닫지 않고 그대로 유지하여 인증 섹션이 보이도록 함
+                              }
+                            }}
+                          >
+                            <Text style={styles.primaryBtnText}>
+                              챌린지 참여하기
+                            </Text>
+                          </Pressable>
+                        );
+                      } else if (currentParticipationStatus === 'PARTICIPATED') {
+                        // PARTICIPATED: 참여 신청만 한 상태 - 버튼 숨김 (이미지 업로드 섹션 표시)
+                        return null;
+                      } else if (currentParticipationStatus === 'PENDING') {
+                        // PENDING: 인증사진 올렸고, AI 검증 대기 - "인증 완료하기" 버튼
+                        console.log('🔍 개인 챌린지 PENDING 상태 버튼 렌더링:', {
+                          challengeId: challengeIdStr,
+                          currentParticipationStatus,
+                          pendingImages: pendingImages[challengeIdStr],
+                          verifyingChallenges: verifyingChallenges[challengeIdStr],
+                          capturedImages: capturedImages[challengeIdStr]
+                        });
+                        
+                        return (
+                          <Pressable
+                            style={[
+                              styles.primaryBtn,
+                              (!pendingImages[challengeIdStr] || verifyingChallenges[challengeIdStr]) && styles.primaryBtnDisabled
+                            ]}
+                            disabled={!pendingImages[challengeIdStr] || verifyingChallenges[challengeIdStr]}
+                            onPress={() => {
+                              if (pendingImages[challengeIdStr] && !uploadingImages[challengeIdStr] && !verifyingChallenges[challengeIdStr]) {
+                                const challengeId = typeof selected.id === 'number' ? selected.id : parseInt(String(selected.id));
+                                handleAiVerification(challengeId, pendingImages[challengeIdStr]);
+                              }
+                            }}
+                          >
+                            <Text style={(!pendingImages[challengeIdStr] || verifyingChallenges[challengeIdStr]) ? styles.primaryBtnTextDisabled : styles.primaryBtnText}>
+                              {verifyingChallenges[challengeIdStr] ? 'AI 검증 중...' : 
+                               !pendingImages[challengeIdStr] ? '인증 사진을 먼저 업로드하세요' : 
+                               '인증 완료하기'}
+                            </Text>
+                          </Pressable>
+                        );
+                      } else if (currentParticipationStatus === 'VERIFYING') {
+                        // VERIFYING: 인증사진 올렸고, AI 검증 진행 중 - "AI 검증 중..." 버튼
+                        return (
+                          <View style={[styles.primaryBtn, styles.primaryBtnDisabled]}>
+                            <Text style={styles.primaryBtnTextDisabled}>
+                              AI 검증 중...
+                            </Text>
+                          </View>
+                        );
+                      } else if (currentParticipationStatus === 'APPROVED' || currentParticipationStatus === 'REJECTED') {
+                        // APPROVED/REJECTED: AI 검증 완료 - "참여완료" 버튼
+                        return (
+                          <View style={[styles.primaryBtn, styles.primaryBtnDisabled]}>
+                            <Text style={styles.primaryBtnTextDisabled}>
+                              참여완료
+                            </Text>
+                          </View>
+                        );
+                      }
+                    } else if (selected.challengeType === 'steps') {
+                      // 걸음수 챌린지
+                      return (
+                        <Pressable
+                          style={styles.primaryBtn}
+                          onPress={() => handleStepsChallenge(selected)}
+                        >
+                          <Text style={styles.primaryBtnText}>
+                            걸음수 확인하기
+                          </Text>
+                        </Pressable>
+                      );
+                    } else {
+                      // simple 타입
+                      return (
+                        <Pressable
+                          style={styles.primaryBtn}
+                          onPress={() => {
+                            setCompleted((prev) => ({ ...prev, [selected.id]: true }));
+                            setSelectedId(null);
+                            Alert.alert('인증 완료!', getChallengeCompletionMessage(selected, 10), [{ text: '확인' }]);
+                          }}
+                        >
+                          <Text style={styles.primaryBtnText}>
+                            완료하기
+                          </Text>
+                        </Pressable>
+                      );
+                    }
+                  } else {
+                    // 완료된 챌린지
+                    return (
+                      <View style={[styles.primaryBtn, styles.primaryBtnDisabled]}>
+                        <Text style={styles.primaryBtnTextDisabled}>
+                          참여완료
+                        </Text>
+                      </View>
+                    );
+                  }
+                })()}
+              </View>
             </ScrollView>
 
-            <View style={styles.sheetFooter}>
-                {!completed[selected.id] && !aiResults[selected.id.toString()] ? (
-                selected.challengeType === 'image' ? (
-                  // 이미지 챌린지인 경우
-                  <Pressable
-                    style={[
-                      styles.primaryBtn,
-                      (!pendingImages[selected.id.toString()] || verifyingChallenges[selected.id.toString()]) && styles.primaryBtnDisabled
-                    ]}
-                    disabled={!pendingImages[selected.id.toString()] || verifyingChallenges[selected.id.toString()]}
-                    onPress={() => {
-                      if (pendingImages[selected.id.toString()] && !uploadingImages[selected.id.toString()] && !verifyingChallenges[selected.id.toString()]) {
-                        const challengeId = typeof selected.id === 'number' ? selected.id : parseInt(String(selected.id));
-                        handleAiVerification(challengeId, pendingImages[selected.id.toString()]);
-                      }
-                    }}
-                  >
-                    <Text style={[
-                      styles.primaryBtnText,
-                      (!pendingImages[selected.id.toString()] || verifyingChallenges[selected.id.toString()]) && styles.primaryBtnTextDisabled
-                    ]}>
-                      {uploadingImages[selected.id.toString()] ? '업로드 중... ⏳' : 
-                       verifyingChallenges[selected.id.toString()] ? '인증하는 중... 🤖' :
-                       pendingImages[selected.id.toString()] ? `인증 완료하기 +${selected.points} 씨앗` : '사진을 업로드해주세요' }
-                    </Text>
-                  </Pressable>
-                ) : (
-                  // 다른 챌린지 타입인 경우
-                  <Pressable
-                    style={styles.primaryBtn}
-                    onPress={() => {
-                      setCompleted((prev) => ({ ...prev, [selected.id]: true }));
-                      setSelectedId(null);
-                      Alert.alert('인증 완료!', `${selected.points}개의 씨앗을 받았습니다!`);
-                    }}
-                  >
-                    <Text style={styles.primaryBtnText}>인증 완료하기 +{selected.points} 씨앗</Text>
-                  </Pressable>
-                )
-              ) : (
-                <Pressable style={styles.secondaryBtn} onPress={() => setSelectedId(null)}>
-                  <Text style={styles.secondaryBtnText}>
-                    {completed[selected.id] ? '참여완료' : 
-                     aiResults[selected.id.toString()] ? '참여완료' :
-                     '닫기'}
-                  </Text>
-                </Pressable>
-              )}
-            </View>
+            {/* <View style={styles.sheetFooter}>
+              <Pressable 
+                style={styles.closeBtn} 
+                onPress={() => setSelectedId(null)}
+              >
+                <Text style={styles.closeBtnText}>
+                  {completed[selected.id] || 
+                   (aiResults[selected.id.toString()] && aiResults[selected.id.toString()].verificationStatus && aiResults[selected.id.toString()].verificationStatus !== 'PENDING') ? '참여완료' :
+                   '닫기'}
+                </Text>
+              </Pressable>
+            </View> */}
           </View>
         </View>
+        </Modal>
       )}
 
+      {/* 카메라 모달 */}
+      <Modal
+        visible={showCamera}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={() => setShowCamera(false)}
+      >
+        <CameraCapture
+          onCapture={handleImageSelection}
+          onClose={() => setShowCamera(false)}
+          challengeTitle={selected?.title || '챌린지'}
+        />
+      </Modal>
 
       {/* 걸음수 모달 */}
       {showStepsModal && selected && (
@@ -1122,16 +1652,20 @@ export default function EcoChallengeScreen({ onBack, onShowHistory, onShowComple
               
               <View style={styles.stepsModalFooter}>
                 <Pressable 
-                  style={[styles.stepsBtn, styles.stepsBtnSecondary]} 
+                  style={styles.stepsBtnSecondary}
                   onPress={() => setShowStepsModal(false)}
                 >
                   <Text style={styles.stepsBtnSecondaryText}>취소</Text>
                 </Pressable>
+                
                 <Pressable 
-                  style={[styles.stepsBtn, styles.stepsBtnPrimary]} 
-                  onPress={handleStepsChallengeComplete}
+                  style={[styles.stepsBtnPrimary, !walkingConnected && styles.stepsBtnSecondary]}
+                  onPress={handleStepsSubmit}
+                  disabled={!walkingConnected}
                 >
-                  <Text style={styles.stepsBtnPrimaryText}>인증하기 +{selected.points} 씨앗</Text>
+                  <Text style={[styles.stepsBtnPrimaryText, !walkingConnected && styles.stepsBtnSecondaryText]}>
+                    {walkingConnected ? '챌린지 참여' : '연동 필요'}
+                  </Text>
                 </Pressable>
               </View>
             </View>
@@ -1150,7 +1684,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
   },
   headerBtn: { padding: 6 * SCALE },
-  // headerTitle: { fontSize: 16 * SCALE, fontWeight: '700', color: '#111827' },
   historyBtn: { 
     padding: 6 * SCALE,
     backgroundColor: '#F0FDF4',
@@ -1159,7 +1692,6 @@ const styles = StyleSheet.create({
     borderColor: '#BBF7D0',
   },
   content: { flex: 1, padding: 20 * SCALE },
-
   // 새로운 헤더 섹션 스타일
   headerSection: {
     marginBottom: 32 * SCALE,
@@ -1292,6 +1824,16 @@ const styles = StyleSheet.create({
   },
   completedIndicator: {
     alignItems: 'center',
+  },
+  participatedIndicator: {
+    alignItems: 'center',
+    marginTop: 4 * SCALE,
+  },
+  participatedText: {
+    fontSize: 12 * SCALE,
+    fontWeight: '600',
+    color: '#3B82F6',
+    marginTop: 2 * SCALE,
   },
 
   // 완료된 챌린지 섹션 스타일
@@ -1612,15 +2154,106 @@ const styles = StyleSheet.create({
   sheetIconWrap: { width: 52 * SCALE, height: 52 * SCALE, borderRadius: 16 * SCALE, backgroundColor: '#F0FDF4', alignItems: 'center', justifyContent: 'center', marginRight: 16 * SCALE },
   sheetIconText: { fontSize: 28 * SCALE },
   sheetTitle: { fontSize: 20 * SCALE, fontWeight: '800', color: '#111827' },
-  sheetBody: { maxHeight: 420 * SCALE, paddingHorizontal: 20 * SCALE, paddingTop: 16 * SCALE },
+  sheetBody: { maxHeight: 500 * SCALE, paddingHorizontal: 20 * SCALE, paddingTop: 16 * SCALE, paddingBottom: 80 * SCALE },
   section: { marginBottom: 12 * SCALE },
-  sectionTitle: { fontSize: 15 * SCALE, fontWeight: '800', color: COLORS.primary, marginBottom: 8 * SCALE }, // 여백 줄임
+  sectionTitle: { fontSize: 15 * SCALE, fontWeight: '800', color: COLORS.primary, marginBottom: 8 * SCALE },
   sectionText: { fontSize: 14 * SCALE, color: '#4B5563', lineHeight: 22 * SCALE },
   sheetFooter: { paddingHorizontal: 20 * SCALE, paddingTop: 12 * SCALE },
-  primaryBtn: { backgroundColor: COLORS.primary, borderRadius: 16 * SCALE, paddingVertical: 16 * SCALE, alignItems: 'center', justifyContent: 'center', shadowColor: '#138072', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 8 },
+  primaryBtn: { backgroundColor: COLORS.primary, borderRadius: 16 * SCALE, paddingVertical: 16 * SCALE, alignItems: 'center', justifyContent: 'center', marginBottom: 28 * SCALE },
   primaryBtnText: { color: COLORS.white, fontSize: 16 * SCALE, fontWeight: '800' },
+  primaryBtnDisabled: { backgroundColor: '#E5E7EB', shadowOpacity: 0 },
+  primaryBtnTextDisabled: { color: '#9CA3AF', fontSize: 16 * SCALE, fontWeight: '800' },
   secondaryBtn: { backgroundColor: '#F8FAFC', borderRadius: 16 * SCALE, paddingVertical: 16 * SCALE, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#E2E8F0' },
   secondaryBtnText: { color: '#475569', fontSize: 16 * SCALE, fontWeight: '700' },
+  closeBtn: { backgroundColor: '#F3F4F6', borderRadius: 12 * SCALE, paddingVertical: 12 * SCALE, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#E5E7EB' },
+  closeBtnText: { color: '#6B7280', fontSize: 14 * SCALE, fontWeight: '700' },
+  buttonSection: { marginTop: 16 * SCALE },
+  
+  // 이미지 섹션 스타일
+  imageSection: { marginTop: 8 * SCALE },
+  completedImageContainer: {
+    position: 'relative',
+    borderRadius: 12 * SCALE,
+    overflow: 'hidden',
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  completedImage: {
+    width: '100%',
+    height: 200 * SCALE,
+    resizeMode: 'cover',
+  },
+  completedImageOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(16, 185, 129, 0.9)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  completedImageText: {
+    color: '#FFFFFF',
+    fontSize: 16 * SCALE,
+    fontWeight: '700',
+    marginTop: 8 * SCALE,
+  },
+  noImagePlaceholder: {
+    height: 200 * SCALE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F9FAFB',
+  },
+  noImageText: {
+    fontSize: 14 * SCALE,
+    color: '#9CA3AF',
+    marginTop: 8 * SCALE,
+  },
+  
+  // AI 검증 결과 스타일
+  aiResultSection: { marginTop: 8 * SCALE },
+  aiResultCard: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12 * SCALE,
+    padding: 16 * SCALE,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  aiResultRow: {
+    flexDirection: 'row',
+    marginBottom: 8 * SCALE,
+  },
+  aiResultLabel: {
+    fontSize: 14 * SCALE,
+    fontWeight: '600',
+    color: '#374151',
+    width: 60 * SCALE,
+  },
+  aiResultValue: {
+    fontSize: 14 * SCALE,
+    color: '#111827',
+    flex: 1,
+  },
+  aiResultSuccess: {
+    color: '#059669',
+    fontWeight: '700',
+  },
+  aiResultError: {
+    color: '#DC2626',
+    fontWeight: '700',
+  },
+  aiResultPending: {
+    color: '#D97706',
+    fontWeight: '700',
+  },
+  aiResultDescription: {
+    fontSize: 14 * SCALE,
+    color: '#4B5563',
+    flex: 1,
+    lineHeight: 20 * SCALE,
+  },
   
   // 걸음수 모달 스타일
   modalOverlay: {
@@ -1655,9 +2288,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#111827',
     flex: 1,
-  },
-  closeBtn: {
-    padding: 4 * SCALE,
   },
   stepsContent: {
     padding: 20 * SCALE,
@@ -1719,14 +2349,12 @@ const styles = StyleSheet.create({
     padding: 20 * SCALE,
     paddingTop: 0,
   },
-  stepsBtn: {
+  stepsBtnSecondary: {
     flex: 1,
     paddingVertical: 14 * SCALE,
     borderRadius: 12 * SCALE,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  stepsBtnSecondary: {
     backgroundColor: '#F3F4F6',
     borderWidth: 1,
     borderColor: '#E5E7EB',
@@ -1737,6 +2365,11 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   stepsBtnPrimary: {
+    flex: 1,
+    paddingVertical: 14 * SCALE,
+    borderRadius: 12 * SCALE,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: COLORS.primary,
     // 3D shadow
     shadowColor: COLORS.primary,
@@ -1784,275 +2417,104 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0FDF4',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12 * SCALE,
-    borderWidth: 2,
-    borderColor: '#BBF7D0',
+    marginRight: 16 * SCALE,
   },
-  imageOptionsEmoji: {
+  imageOptionsIcon: {
     fontSize: 24 * SCALE,
-  },
-  imageOptionsTitleTextContainer: {
-    flex: 1,
   },
   imageOptionsTitle: {
     fontSize: 18 * SCALE,
     fontWeight: '800',
     color: '#111827',
-    marginBottom: 2 * SCALE,
-  },
-  imageOptionsSubtitle: {
-    fontSize: 14 * SCALE,
-    color: '#6B7280',
-    fontWeight: '500',
+    flex: 1,
   },
   imageOptionsContent: {
     padding: 24 * SCALE,
   },
-  imageOptionsDesc: {
-    fontSize: 16 * SCALE,
-    color: '#374151',
-    textAlign: 'center',
-    marginBottom: 28 * SCALE,
-    lineHeight: 24 * SCALE,
-    fontWeight: '500',
+  imageOptionsDescription: {
+    fontSize: 14 * SCALE,
+    color: '#6B7280',
+    lineHeight: 20 * SCALE,
+    marginBottom: 24 * SCALE,
   },
   imageOptionsButtons: {
-    flexDirection: 'row',
-    gap: 16 * SCALE,
-    marginBottom: 20 * SCALE,
+    gap: 12 * SCALE,
   },
   imageOptionBtn: {
-    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: 24 * SCALE,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20 * SCALE,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    // 3D shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  imageOptionIcon: {
-    width: 72 * SCALE,
-    height: 72 * SCALE,
-    borderRadius: 36 * SCALE,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16 * SCALE,
-    // 3D shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 10,
-  },
-  cameraIcon: {
-    backgroundColor: '#3B82F6',
-  },
-  galleryIcon: {
-    backgroundColor: '#8B5CF6',
-  },
-  imageOptionText: {
-    fontSize: 16 * SCALE,
-    fontWeight: '800',
-    color: '#111827',
-    textAlign: 'center',
-    marginBottom: 4 * SCALE,
-  },
-  imageOptionSubtext: {
-    fontSize: 12 * SCALE,
-    color: '#6B7280',
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  imageOptionsFooter: {
-    backgroundColor: '#F0F9FF',
-    borderRadius: 12 * SCALE,
     padding: 16 * SCALE,
-    borderWidth: 1,
-    borderColor: '#E0F2FE',
-  },
-  imageOptionsFooterText: {
-    fontSize: 13 * SCALE,
-    color: '#0369A1',
-    textAlign: 'center',
-    fontWeight: '600',
-    lineHeight: 18 * SCALE,
-  },
-  simulatorNotice: {
-    fontSize: 12 * SCALE,
-    color: '#F59E0B',
-    textAlign: 'center',
-    fontWeight: '600',
-    lineHeight: 16 * SCALE,
-    marginTop: 8 * SCALE,
-    backgroundColor: '#FEF3C7',
-    padding: 8 * SCALE,
-    borderRadius: 8 * SCALE,
-    borderWidth: 1,
-    borderColor: '#FCD34D',
-  },
-  primaryBtnDisabled: {
-    backgroundColor: '#E5E7EB',
-    opacity: 0.6,
-  },
-  primaryBtnTextDisabled: {
-    color: '#9CA3AF',
-  },
-  
-  // 완료된 이미지 표시 스타일
-  completedImageContainer: {
-    position: 'relative',
-    width: '100%',
-    height: 200 * SCALE,
-    borderRadius: 12 * SCALE,
-    overflow: 'hidden',
-    backgroundColor: '#F3F4F6',
-    borderWidth: 2,
-    borderColor: '#10B981',
-    borderStyle: 'solid',
-  },
-  completedImage: {
-    width: '100%',
-    height: '100%',
-  },
-  completedImageOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  completedImageText: {
-    color: '#10B981',
-    fontSize: 14 * SCALE,
-    fontWeight: '700',
-    marginTop: 8 * SCALE,
-  },
-
-  // AI 검증 결과 스타일
-  aiResultSection: {
     backgroundColor: '#F8FAFC',
     borderRadius: 12 * SCALE,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    padding: 16 * SCALE,
-    marginTop: 8 * SCALE,
   },
-  aiResultTitle: {
-    fontSize: 16 * SCALE,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 12 * SCALE,
-  },
-  aiResultCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8 * SCALE,
-    padding: 12 * SCALE,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  aiResultRow: {
-    flexDirection: 'row',
-    marginBottom: 8 * SCALE,
-    alignItems: 'flex-start',
-  },
-  aiResultLabel: {
-    fontSize: 14 * SCALE,
-    fontWeight: '600',
-    color: '#374151',
-    width: 60 * SCALE,
-    marginRight: 8 * SCALE,
-  },
-  aiResultValue: {
-    fontSize: 14 * SCALE,
-    fontWeight: '600',
-    color: '#1F2937',
-    flex: 1,
-  },
-  aiResultDescription: {
-    fontSize: 13 * SCALE,
-    color: '#6B7280',
-    lineHeight: 18 * SCALE,
-    flex: 1,
-  },
-  aiResultSuccess: {
-    color: '#059669',
-  },
-  aiResultError: {
-    color: '#DC2626',
-  },
-  aiResultWarning: {
-    color: '#D97706',
-  },
-  noImagePlaceholder: {
-    width: '100%',
-    height: '100%',
+  imageOptionBtnIcon: {
+    width: 40 * SCALE,
+    height: 40 * SCALE,
+    borderRadius: 20 * SCALE,
+    backgroundColor: '#E8F4F3',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F3F4F6',
+    marginRight: 12 * SCALE,
   },
-  noImageText: {
-    color: '#9CA3AF',
-    fontSize: 14 * SCALE,
-    fontWeight: '500',
-    marginTop: 8 * SCALE,
+  imageOptionBtnText: {
+    fontSize: 16 * SCALE,
+    fontWeight: '600',
+    color: '#111827',
   },
-  
-  // 이미지 섹션 추가 여백
-  imageSection: {
-    marginBottom: 8 * SCALE, // 여백 줄임
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
   },
-  
-  // 이미지 래퍼 및 디버그 스타일
-  imageWrapper: {
-    position: 'relative',
-    width: '100%',
-    height: '100%',
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20 * SCALE,
+    paddingVertical: 16 * SCALE,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
-  imageDebugInfo: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+  modalTitle: {
+    fontSize: 18 * SCALE,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  modalContent: {
+    flex: 1,
+    padding: 20 * SCALE,
+  },
+  closeButton: {
     padding: 4 * SCALE,
   },
-  debugText: {
-    color: 'white',
-    fontSize: 10 * SCALE,
-    textAlign: 'center',
-  },
-  fallbackImageContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#F3F4F6',
+  stepsInputContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: -1, // 메인 이미지 뒤에 배치
+    marginVertical: 20 * SCALE,
   },
-  fallbackImage: {
-    width: 80 * SCALE,
-    height: 80 * SCALE,
-    opacity: 0.3,
+  stepsButton: {
+    width: 48 * SCALE,
+    height: 48 * SCALE,
+    borderRadius: 24 * SCALE,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
   },
-  fallbackText: {
-    color: '#9CA3AF',
-    fontSize: 12 * SCALE,
-    fontWeight: '500',
-    marginTop: 8 * SCALE,
+  submitButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 12 * SCALE,
+    paddingVertical: 16 * SCALE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20 * SCALE,
   },
-  
+  submitButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16 * SCALE,
+    fontWeight: '700',
+  },
 });
-
-

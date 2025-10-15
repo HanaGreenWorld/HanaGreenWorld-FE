@@ -66,14 +66,29 @@ export default function QuizScreen({ onBack, onQuizCompleted, quizCompleted = fa
             setReward(result.pointsAwarded);
           } else {
             const dailyQuiz = await fetchDailyQuiz();
-            setQuiz(dailyQuiz);
-            setHasSubmitted(false);
+            if (dailyQuiz && dailyQuiz.question && Array.isArray(dailyQuiz.options)) {
+              setQuiz(dailyQuiz);
+              setHasSubmitted(false);
+            } else {
+              console.error('Invalid quiz data received:', dailyQuiz);
+              Alert.alert('오류', '퀴즈 데이터가 올바르지 않습니다.');
+            }
           }
         } catch (error) {
           // 에러는 dailyQuiz 로드로 폴백
-          const dailyQuiz = await fetchDailyQuiz();
-          setQuiz(dailyQuiz);
-          setHasSubmitted(false);
+          try {
+            const dailyQuiz = await fetchDailyQuiz();
+            if (dailyQuiz && dailyQuiz.question && Array.isArray(dailyQuiz.options)) {
+              setQuiz(dailyQuiz);
+              setHasSubmitted(false);
+            } else {
+              console.error('Invalid quiz data received in fallback:', dailyQuiz);
+              Alert.alert('오류', '퀴즈 데이터가 올바르지 않습니다.');
+            }
+          } catch (fallbackError) {
+            console.error('Fallback quiz loading failed:', fallbackError);
+            Alert.alert('오류', '퀴즈를 불러올 수 없습니다.');
+          }
         }
       } catch (error) {
         console.error('퀴즈 데이터 로딩 실패:', error);
@@ -212,14 +227,14 @@ export default function QuizScreen({ onBack, onQuizCompleted, quizCompleted = fa
           
           {loading ? (
             <Text style={styles.loadingText}>퀴즈를 불러오는 중...</Text>
-          ) : hasSubmitted && todayResult ? (
+          ) : hasSubmitted && todayResult && todayResult.quiz && todayResult.quiz.question ? (
             // 이미 퀴즈를 푼 경우 결과 표시
             <View>
               <Text style={styles.question}>
                 Q. {todayResult.quiz.question}
               </Text>
               <View style={styles.answerOptions}>
-                {(todayResult.quiz.options as string[]).map((option, index) => (
+                {(todayResult.quiz.options && Array.isArray(todayResult.quiz.options) ? todayResult.quiz.options : []).map((option, index) => (
                   <TouchableOpacity
                     key={index}
                     style={[
@@ -250,14 +265,14 @@ export default function QuizScreen({ onBack, onQuizCompleted, quizCompleted = fa
                 )}
               </View>
             </View>
-          ) : quiz ? (
+          ) : quiz && quiz.question ? (
             // 새로운 퀴즈 표시
             <View>
               <Text style={styles.question}>
                 Q. {quiz.question}
               </Text>
               <View style={styles.answerOptions}>
-                {(quiz.options as string[]).map((option, index) => (
+                {(quiz.options && Array.isArray(quiz.options) ? quiz.options : []).map((option, index) => (
                   <TouchableOpacity
                     key={index}
                     style={[

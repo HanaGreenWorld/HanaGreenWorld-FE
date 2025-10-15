@@ -174,7 +174,6 @@ export function ProductSignupScreen({ onNavigateBack }: ProductSignupScreenProps
               </View>
             </Pressable>
 
-            {/* DatePicker - 날짜 버튼 바로 아래에 배치 */}
             {showDatePicker && (
               <DateTimePicker
                 value={transferDate}
@@ -247,7 +246,6 @@ export function ProductSignupScreen({ onNavigateBack }: ProductSignupScreenProps
         </Pressable>
       </View>
 
-      {/* 계좌 선택 모달 */}
       <Modal
         visible={showAccountSelector}
         transparent={true}
@@ -373,7 +371,6 @@ export function ProductSignupScreen({ onNavigateBack }: ProductSignupScreenProps
             </View>
           </>
         )}
-        {/* Debug: 자동이체 정보 확인 */}
         {console.log('signupResponse:', signupResponse)}
         {console.log('autoTransferEnabled:', signupResponse?.autoTransferEnabled)}
         {console.log('transferDay:', signupResponse?.transferDay)}
@@ -425,7 +422,7 @@ export function ProductSignupScreen({ onNavigateBack }: ProductSignupScreenProps
       setLoading(true);
 
       const applicationData = {
-        savingProductId: 1, // TODO: 실제 적금 상품 ID로 변경
+        savingProductId: 1,
         applicationAmount: parseInt(savingsAmount.replace(/[^0-9]/g, '')),
         withdrawalAccountId: selectedAccount.id,
         withdrawalAccountNumber: selectedAccount.accountNumber,
@@ -455,7 +452,6 @@ export function ProductSignupScreen({ onNavigateBack }: ProductSignupScreenProps
       behavior="height"
       keyboardVerticalOffset={0}
     >
-      {/* Header */}
       <View style={styles.header}>
         <Pressable style={styles.backButton} onPress={onNavigateBack}>
           <Ionicons name="close" size={24} color="#111827" />
@@ -474,7 +470,6 @@ export function ProductSignupScreen({ onNavigateBack }: ProductSignupScreenProps
         {getCurrentStepContent()}
       </ScrollView>
 
-      {/* 저축 금액 키보드 */}
       <NumericKeypad
         visible={showSavingsKeypad}
         onClose={() => setShowSavingsKeypad(false)}
@@ -491,7 +486,6 @@ export function ProductSignupScreen({ onNavigateBack }: ProductSignupScreenProps
         ]}
       />
 
-      {/* 하단 버튼 */}
       <View style={styles.bottomButton}>
         <Pressable
           style={[styles.mainButton, !canProceed() && styles.mainButtonDisabled]}
@@ -504,13 +498,11 @@ export function ProductSignupScreen({ onNavigateBack }: ProductSignupScreenProps
         </Pressable>
       </View>
 
-      {/* 상담 버튼 */}
       <Pressable style={styles.consultationButton}>
         <Ionicons name="chatbubble" size={20} color="white" />
         <Text style={styles.consultationButtonText}>상담</Text>
       </Pressable>
 
-      {/* 성공 모달 */}
       <Modal
         visible={showSuccessModal}
         transparent={true}

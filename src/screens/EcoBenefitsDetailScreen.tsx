@@ -19,7 +19,6 @@ export function EcoBenefitsDetailScreen({ onBack, onHome }: EcoBenefitsDetailScr
   // 사용자 정보 가져오기
   const { userInfo } = useUser();
   
-  // 카드 데이터 훅 사용
   const { 
     ecoBenefits,
     getEcoBenefits,
@@ -51,16 +50,18 @@ export function EcoBenefitsDetailScreen({ onBack, onHome }: EcoBenefitsDetailScr
     switch (type) {
       case 'ECO_FOOD':
         return require('../../assets/hana3dIcon/hanaIcon3d_105.png');
-      case 'PUBLIC_TRANSPORT':
-        return require('../../assets/hana3dIcon/hanaIcon3d_107.png');
+      case 'GREEN_MOBILITY':
+        return require('../../assets/hana3dIcon/hanaIcon3d_29.png');
+      case 'ZERO_WASTE':
+        return require('../../assets/hana3dIcon/zero_waste.png');
       case 'ECO_BRAND':
-        return require('../../assets/hana3dIcon/hanaIcon3d_101.png');
+        return require('../../assets/hana3dIcon/hanaIcon3d_85.png');
       case 'SECOND_HAND':
-        return require('../../assets/hana3dIcon/hanaIcon3d_103.png');
+        return require('../../assets/hana3dIcon/hanaIcon3d_107.png');
       case 'ORGANIC_FOOD':
-        return require('../../assets/hana3dIcon/hanaIcon3d_11.png');
-      default:
         return require('../../assets/hana3dIcon/hanaIcon3d_105.png');
+      default:
+        return require('../../assets/hana3dIcon/hanaIcon3d_33.png');
     }
   };
 

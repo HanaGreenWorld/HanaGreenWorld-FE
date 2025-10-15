@@ -56,9 +56,8 @@ export default function WalkingScreen({ onBack, onAwardSeeds }: WalkingScreenPro
               setClaimedToday(true);
               setLastSyncAt(todayRecord.activityDate ? new Date(todayRecord.activityDate).toLocaleTimeString() : new Date().toLocaleTimeString());
             } else {
-              // 오늘 기록이 없음 - 목데이터로 초기화
-              const s = generateTodaySteps();
-              setSteps(s);
+              // 오늘 기록이 없음 - 0으로 초기화 (더미데이터 제거)
+              setSteps(0);
               setLastSyncAt(new Date().toLocaleTimeString());
             }
             
@@ -77,9 +76,8 @@ export default function WalkingScreen({ onBack, onAwardSeeds }: WalkingScreenPro
               console.error('최근 걷기 기록 조회 실패:', error);
             }
           } catch (error) {
-            // 오늘 기록 조회 실패 시 목데이터로 초기화
-            const s = generateTodaySteps();
-            setSteps(s);
+            // 오늘 기록 조회 실패 시 0으로 초기화 (더미데이터 제거)
+            setSteps(0);
             setLastSyncAt(new Date().toLocaleTimeString());
           }
         } else {
@@ -355,15 +353,13 @@ export default function WalkingScreen({ onBack, onAwardSeeds }: WalkingScreenPro
                        setClaimedToday(true);
                        setLastSyncAt(todayRecord.activityDate ? new Date(todayRecord.activityDate).toLocaleTimeString() : new Date().toLocaleTimeString());
                      } else {
-                       // 오늘 기록이 없음 - 목데이터로 초기화
-                       const s = generateTodaySteps();
-                       setSteps(s);
+                       // 오늘 기록이 없음 - 0으로 초기화 (더미데이터 제거)
+                       setSteps(0);
                        setLastSyncAt(new Date().toLocaleTimeString());
                      }
                    } catch (error) {
-                     // 오늘 기록 조회 실패 시 목데이터로 초기화
-                     const s = generateTodaySteps();
-                     setSteps(s);
+                     // 오늘 기록 조회 실패 시 0으로 초기화 (더미데이터 제거)
+                     setSteps(0);
                      setLastSyncAt(new Date().toLocaleTimeString());
                    }
                  } catch (error) {

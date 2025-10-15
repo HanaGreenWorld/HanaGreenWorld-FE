@@ -10,10 +10,12 @@ import {
   Platform,
   Image,
   ScrollView,
+  StatusBar,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 // SafeAreaView는 PhoneFrame에서 처리됨
-import { saveAuthToken, removeAuthToken } from '../utils/authUtils';
-import { API_BASE_URL } from '../utils/constants';
+import { saveAuthToken, removeAuthToken, saveUserInfo } from '../utils/authUtils';
+import { API_BASE_URL, COLORS, SCALE } from '../utils/constants';
 import { testNetworkConnection, testLogin } from '../utils/testApi';
 
 interface LoginScreenProps {
@@ -92,6 +94,17 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           console.log('JWT 토큰 저장 완료');
         }
         
+        // 사용자 정보 저장
+        if (data.memberId && data.email && data.name) {
+          console.log('사용자 정보 받음:', { memberId: data.memberId, email: data.email, name: data.name });
+          await saveUserInfo({
+            memberId: data.memberId,
+            email: data.email,
+            name: data.name
+          });
+          console.log('사용자 정보 저장 완료');
+        }
+        
         console.log('Dashboard로 이동 시도...');
         
         // 웹에서 즉시 네비게이션 처리
@@ -152,73 +165,74 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="white" />
+
+      {/* 네비게이션바 */}
+      <View style={styles.navigationBar}>
+        <View style={styles.navLeft} />
+        <Text style={styles.navTitle}>로그인</Text>
+        <View style={styles.navIcons}>
+          <TouchableOpacity style={styles.navIcon}>
+            <Ionicons name="home-outline" size={24 * SCALE} color={COLORS.text} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navIcon}>
+            <Ionicons name="menu-outline" size={24 * SCALE} color={COLORS.text} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-          {/* 로고 영역 */}
-          <View style={styles.logoContainer}>
-            <Image
-              source={require('../../assets/hana_logo.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-            <Text style={styles.title}>하나green세상</Text>
-            <Text style={styles.subtitle}>친환경 금융 서비스</Text>
-          </View>
-
-          {/* 로그인 폼 */}
-          <View style={styles.formContainer}>
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>아이디</Text>
+          {/* 메인 안내 텍스트 */}
+          <View style={styles.mainContent}>
+            <Text style={styles.instructionText}>아이디와 비밀번호를{'\n'}입력해 주세요</Text>
+            
+            {/* 입력 필드들 */}
+            <View style={styles.inputFieldsContainer}>
               <TextInput
-                style={styles.input}
+                style={styles.inputField}
                 value={memberId}
                 onChangeText={setMemberId}
-                placeholder="아이디를 입력하세요"
+                placeholder="아이디"
+                placeholderTextColor="#999999"
                 autoCapitalize="none"
                 autoCorrect={false}
               />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>비밀번호</Text>
+              
               <TextInput
-                style={styles.input}
+                style={styles.inputField}
                 value={password}
                 onChangeText={setPassword}
-                placeholder="비밀번호를 입력하세요"
+                placeholder="비밀번호"
+                placeholderTextColor="#999999"
                 secureTextEntry
                 autoCapitalize="none"
                 autoCorrect={false}
               />
             </View>
 
-            {/* 테스트 버튼들 */}
-            {/* <View style={styles.testButtons}>
-              <TouchableOpacity
-                style={styles.testButton}
-                onPress={handleTestNetwork}
-              >
-                <Text style={styles.testButtonText}>🔍 네트워크 테스트</Text>
-              </TouchableOpacity>
+            {/* 도움말 링크들 */}
+            <View style={styles.helpLinksContainer}>
+              <View style={styles.helpLinksRow}>
+                <TouchableOpacity style={styles.helpLink}>
+                  <Text style={styles.helpLinkText}>아이디 찾기</Text>
+                </TouchableOpacity>
+                <Text style={styles.helpLinkSeparator}>|</Text>
+                <TouchableOpacity style={styles.helpLink}>
+                  <Text style={styles.helpLinkText}>회원가입</Text>
+                </TouchableOpacity>
+              </View>
               
-              <TouchableOpacity
-                style={styles.testButton}
-                onPress={handleTestLogin}
-              >
-                <Text style={styles.testButtonText}>🔑 로그인 테스트</Text>
+              <TouchableOpacity style={styles.usageGuideLink}>
+                <Text style={styles.usageGuideText}>아이디 로그인 이용 안내</Text>
+                <View style={styles.questionMark}>
+                  <Text style={styles.questionMarkText}>?</Text>
+                </View>
               </TouchableOpacity>
-            </View> */}
-
-            {/* 토큰 초기화 버튼 */}
-            {/* <TouchableOpacity
-              style={styles.clearTokenButton}
-              onPress={handleClearToken}
-            >
-              <Text style={styles.clearTokenButtonText}>🗑️ 토큰 초기화</Text>
-            </TouchableOpacity> */}
+            </View>
 
             {/* 로그인 버튼 */}
             <TouchableOpacity
@@ -231,19 +245,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               </Text>
             </TouchableOpacity>
 
-            {/* 회원가입 링크 */}
-            <TouchableOpacity style={styles.signupLink} onPress={handleSignup}>
-              <Text style={styles.signupText}>
-                계정이 없으신가요? <Text style={styles.signupTextBold}>회원가입</Text>
-              </Text>
+            {/* 다른 로그인 방법 */}
+            <TouchableOpacity style={styles.otherLoginMethods}>
+              <Text style={styles.otherLoginText}>다른 로그인방법</Text>
+              <Text style={styles.chevronIcon}>⌄</Text>
             </TouchableOpacity>
-
-            {/* 테스트 계정 정보 */}
-            {/* <View style={styles.testAccountContainer}>
-              <Text style={styles.testAccountTitle}>테스트 계정</Text>
-              <Text style={styles.testAccountText}>아이디: testuser</Text>
-              <Text style={styles.testAccountText}>비밀번호: test1234!</Text>
-            </View> */}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -254,150 +260,177 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'white',
+  },
+  statusBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 5,
+    backgroundColor: 'white',
+  },
+  statusBarTime: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'black',
+  },
+  statusBarIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  statusBarIcon: {
+    fontSize: 14,
+    color: 'black',
+  },
+  navigationBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  navLeft: {
+    width: 60, // 아이콘들과 균형을 맞추기 위한 공간
+  },
+  navTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: 'black',
+    flex: 1,
+    textAlign: 'center',
+  },
+  navIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 15,
+    width: 60, // 왼쪽과 균형을 맞추기 위한 고정 너비
+    justifyContent: 'flex-end',
+  },
+  navIcon: {
+    padding: 5,
   },
   keyboardAvoidingView: {
     flex: 1,
   },
   scrollContainer: {
     flexGrow: 1,
-    justifyContent: 'center',
     paddingHorizontal: 20,
   },
-  logoContainer: {
-    alignItems: 'center',
+  mainContent: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  instructionText: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: 'black',
+    textAlign: 'center',
     marginBottom: 50,
+    lineHeight: 28,
   },
-  logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 20,
+  inputFieldsContainer: {
+    marginBottom: 30,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    marginBottom: 8,
-  },
-  subtitle: {
+  inputField: {
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
     fontSize: 16,
-    color: '#7f8c8d',
+    backgroundColor: '#fff',
+    marginBottom: 16,
+    color: 'black',
   },
-  formContainer: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 30,
+  helpLinksContainer: {
+    marginBottom: 180,
+  },
+  helpLinksRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  helpLink: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  helpLinkText: {
+    fontSize: 14,
+    color: '#666666',
+  },
+  helpLinkSeparator: {
+    fontSize: 14,
+    color: '#cccccc',
+    marginHorizontal: 8,
+  },
+  usageGuideLink: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  usageGuideText: {
+    fontSize: 14,
+    color: '#666666',
+    marginRight: 8,
+  },
+  questionMark: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  questionMarkText: {
+    fontSize: 12,
+    color: '#666666',
+    fontWeight: 'bold',
+  },
+  loginButton: {
+    backgroundColor: COLORS.primary, // teal 색상
+    borderRadius: 8,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginBottom: 10,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
     },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#e1e8ed',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    backgroundColor: '#f8f9fa',
-  },
-  loginButton: {
-    backgroundColor: '#27ae60',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 20,
+    shadowRadius: 4,
+    elevation: 3,
   },
   loginButtonDisabled: {
-    backgroundColor: '#95a5a6',
+    backgroundColor: '#cccccc',
   },
   loginButtonText: {
     color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
   },
-  signupLink: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  signupText: {
-    fontSize: 16,
-    color: '#7f8c8d',
-  },
-  signupTextBold: {
-    color: '#27ae60',
-    fontWeight: 'bold',
-  },
-  testAccountContainer: {
-    backgroundColor: '#ecf0f1',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 10,
-  },
-  testAccountInfo: {
-    backgroundColor: '#e8f5e8',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#27ae60',
-  },
-  testAccountTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#27ae60',
-    marginBottom: 6,
-  },
-  testButtons: {
+  otherLoginMethods: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-    gap: 8,
-  },
-  testButton: {
-    flex: 1,
-    backgroundColor: '#3498db',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    justifyContent: 'center',
     alignItems: 'center',
-  },
-  testButtonText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  testAccountText: {
-    fontSize: 12,
-    color: '#7f8c8d',
-    marginBottom: 2,
-  },
-  clearTokenButton: {
-    backgroundColor: '#e74c3c',
-    borderRadius: 8,
     paddingVertical: 12,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    marginBottom: 16,
   },
-  clearTokenButtonText: {
-    color: 'white',
+  otherLoginText: {
     fontSize: 14,
-    fontWeight: 'bold',
+    color: '#666666',
+    marginRight: 8,
+  },
+  chevronIcon: {
+    fontSize: 16,
+    color: '#666666',
   },
 });
 

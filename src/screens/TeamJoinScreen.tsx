@@ -18,6 +18,84 @@ import TeamCreateScreen from './TeamCreateScreen';
 
 const { width, height } = Dimensions.get('window');
 
+// 팀 미리보기 컴포넌트
+interface TeamPreviewProps {
+  team: TeamResponse;
+  onCancel: () => void;
+  onJoin: (team: TeamResponse) => void;
+  loading: boolean;
+}
+
+const TeamPreview: React.FC<TeamPreviewProps> = ({ team, onCancel, onJoin, loading }) => {
+  return (
+    <View style={styles.teamPreview}>
+      <View style={styles.previewHeader}>
+        <Text style={styles.previewTitle}>선택한 팀</Text>
+        <TouchableOpacity
+          style={styles.cancelButton}
+          onPress={onCancel}
+        >
+          <Ionicons name="close-circle" size={24} color="#6B7280" />
+        </TouchableOpacity>
+      </View>
+      <View style={styles.teamCard}>
+        <View style={styles.teamCardHeader}>
+          <View style={styles.teamBadge}>
+            <Ionicons name="people" size={16} color="#FFFFFF" />
+          </View>
+          <View style={styles.teamInfo}>
+            <Text style={styles.teamName}>{team.name}</Text>
+            <Text style={styles.teamRank}>{team.rank}위</Text>
+          </View>
+        </View>
+        <Text style={styles.teamSlogan}>"{team.slogan}"</Text>
+        <View style={styles.teamStats}>
+          <View style={styles.statItem}>
+            <View style={styles.statIcon}>
+              <Ionicons name="people-outline" size={16} color="#018479" />
+            </View>
+            <Text style={styles.statValue}>
+              {team.maxMembers 
+                ? `${team.members} / ${team.maxMembers}`
+                : team.members
+              }
+            </Text>
+            <Text style={styles.statLabel}>멤버</Text>
+          </View>
+          <View style={styles.statItem}>
+            <View style={styles.statIcon}>
+              <Ionicons name="leaf-outline" size={16} color="#018479" />
+            </View>
+            <Text style={styles.statValue}>{team.totalSeeds}</Text>
+            <Text style={styles.statLabel}>점</Text>
+          </View>
+          <View style={styles.statItem}>
+            <View style={styles.statIcon}>
+              <Ionicons name="trophy-outline" size={16} color="#018479" />
+            </View>
+            <Text style={styles.statValue}>{team.completedChallenges}</Text>
+            <Text style={styles.statLabel}>성공</Text>
+          </View>
+        </View>
+        <TouchableOpacity
+          style={styles.joinButton}
+          onPress={() => onJoin(team)}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <>
+              <Ionicons name="send" size={16} color="#FFFFFF" />
+              <Text style={styles.joinButtonText}>가입 신청하기</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
 interface TeamJoinScreenProps { 
   onBack: () => void; 
   onJoinSuccess: (team: TeamResponse) => void;
@@ -94,7 +172,7 @@ export default function TeamJoinScreen({ onBack, onJoinSuccess }: TeamJoinScreen
     try {
       setLoading(true);
       const result = await teamApi.requestJoinTeam(team.inviteCode);
-      Alert.alert('신청 완료', '팀 가입을 신청했습니다!\n방장의 승인을 기다려주세요. 📩\n\n"내 신청" 탭에서 상태를 확인할 수 있어요!', [
+      Alert.alert('신청 완료', '팀 가입을 신청했습니다!\n방장의 승인을 기다려주세요.\n\n"내 신청" 탭에서 상태를 확인할 수 있어요!', [
         { 
           text: '내 신청 보기', 
           onPress: () => {
@@ -166,66 +244,12 @@ export default function TeamJoinScreen({ onBack, onJoinSuccess }: TeamJoinScreen
         </View>
 
         {selectedTeam && (
-          <View style={styles.teamPreview}>
-            <View style={styles.previewHeader}>
-              <Text style={styles.previewTitle}>선택한 팀</Text>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setSelectedTeam(null)}
-              >
-                <Ionicons name="close-circle" size={24} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.teamCard}>
-              <View style={styles.teamCardHeader}>
-                <View style={styles.teamBadge}>
-                  <Ionicons name="people" size={16} color="#FFFFFF" />
-                </View>
-                <View style={styles.teamInfo}>
-                  <Text style={styles.teamName}>{selectedTeam.name}</Text>
-                  <Text style={styles.teamRank}>{selectedTeam.rank}위</Text>
-                </View>
-              </View>
-              <Text style={styles.teamSlogan}>"{selectedTeam.slogan}"</Text>
-              <View style={styles.teamStats}>
-                <View style={styles.statItem}>
-                  <View style={styles.statIcon}>
-                    <Ionicons name="people-outline" size={16} color="#018479" />
-                  </View>
-                  <Text style={styles.statValue}>{selectedTeam.members}</Text>
-                  <Text style={styles.statLabel}>멤버</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <View style={styles.statIcon}>
-                    <Ionicons name="leaf-outline" size={16} color="#018479" />
-                  </View>
-                  <Text style={styles.statValue}>{selectedTeam.totalSeeds}</Text>
-                  <Text style={styles.statLabel}>씨앗</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <View style={styles.statIcon}>
-                    <Ionicons name="trophy-outline" size={16} color="#018479" />
-                  </View>
-                  <Text style={styles.statValue}>{selectedTeam.completedChallenges}</Text>
-                  <Text style={styles.statLabel}>성공</Text>
-                </View>
-              </View>
-              <TouchableOpacity
-                style={styles.joinButton}
-                onPress={() => requestJoinTeam(selectedTeam)}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <>
-                    <Ionicons name="send" size={16} color="#FFFFFF" />
-                    <Text style={styles.joinButtonText}>가입 신청하기</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
+          <TeamPreview
+            team={selectedTeam}
+            onCancel={() => setSelectedTeam(null)}
+            onJoin={requestJoinTeam}
+            loading={loading}
+          />
         )}
       </View>
     </View>
@@ -380,11 +404,16 @@ export default function TeamJoinScreen({ onBack, onJoinSuccess }: TeamJoinScreen
                 <View style={styles.teamItemStats}>
                   <View style={styles.teamItemStat}>
                     <Ionicons name="people" size={16} color="#6B7280" />
-                    <Text style={styles.teamItemStatText}>{team.members}명</Text>
+                    <Text style={styles.teamItemStatText}>
+                      {team.maxMembers 
+                        ? `${team.members}/${team.maxMembers}명`
+                        : `${team.members}명`
+                      }
+                    </Text>
                   </View>
                   <View style={styles.teamItemStat}>
                     <Ionicons name="leaf" size={16} color="#6B7280" />
-                    <Text style={styles.teamItemStatText}>{team.totalSeeds}씨앗</Text>
+                    <Text style={styles.teamItemStatText}>{team.totalSeeds}점</Text>
                   </View>
                   <View style={styles.teamItemStat}>
                     <Ionicons name="checkmark-circle" size={16} color="#6B7280" />
@@ -397,41 +426,12 @@ export default function TeamJoinScreen({ onBack, onJoinSuccess }: TeamJoinScreen
         )}
 
         {selectedTeam && (
-          <View style={styles.teamPreview}>
-            <Text style={styles.previewTitle}>선택한 팀</Text>
-            <View style={styles.teamCard}>
-              <View style={styles.teamHeader}>
-                <Text style={styles.teamName}>{selectedTeam.name}</Text>
-                <Text style={styles.teamRank}>#{selectedTeam.rank}위</Text>
-              </View>
-              <Text style={styles.teamSlogan}>{selectedTeam.slogan}</Text>
-              <View style={styles.teamStats}>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{selectedTeam.members}</Text>
-                  <Text style={styles.statLabel}>멤버</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{selectedTeam.totalSeeds}</Text>
-                  <Text style={styles.statLabel}>씨앗</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{selectedTeam.completedChallenges}</Text>
-                  <Text style={styles.statLabel}>성공 챌린지</Text>
-                </View>
-              </View>
-              <TouchableOpacity
-                style={styles.joinButton}
-                onPress={() => requestJoinTeam(selectedTeam)}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.joinButtonText}>가입 신청하기</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
+          <TeamPreview
+            team={selectedTeam}
+            onCancel={() => setSelectedTeam(null)}
+            onJoin={requestJoinTeam}
+            loading={loading}
+          />
         )}
       </View>
     </View>

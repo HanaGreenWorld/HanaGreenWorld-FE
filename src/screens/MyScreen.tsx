@@ -53,21 +53,13 @@ export function MyScreen({
   // 사용자 정보 가져오기
   const { userInfo } = useUser();
   
-  // 디버깅 로그 추가
-  console.log('🏠 MyScreen 렌더링:', { 
-    activeTab, 
-    userId: userInfo?.id, 
-    timestamp: new Date().toISOString()
-  });
   
   // 초기 탭 데이터 로드
   useEffect(() => {
     if (userInfo?.id) {
-      console.log(`📊 ${activeTab} 탭 데이터 로딩 시작`);
     }
   }, [userInfo?.id, activeTab]);
   
-  // 카드 데이터 훅 사용 (카드 탭에서만)
   const { 
     userCards, 
     currentBenefitPackage,
@@ -80,6 +72,10 @@ export function MyScreen({
     loading: cardLoading, 
     error: cardError 
   } = useCardData(activeTab === '카드' ? (userInfo?.id || 0) : 0);
+
+
+  // 카드 탭에서만 로딩 상태 표시
+  const isCardTabLoading = activeTab === '카드' && cardLoading;
   
   // 적금 데이터 훅 사용 (적금 탭에서만)
   // 고객 적금 계좌 데이터 훅 사용 (적금 탭에서만) - 실제 필요한 데이터만
@@ -90,42 +86,21 @@ export function MyScreen({
 
   // 친환경 혜택 카테고리 아이콘 매핑 (실제 데이터베이스에서 가져온 정보 사용)
   const getCategoryIcon = (type: string, iconUrl?: string) => {
-    // 데이터베이스에서 가져온 아이콘 URL이 있으면 사용
-    if (iconUrl && iconUrl.startsWith('hanaIcon3d_')) {
-      // 실제로는 서버에서 이미지 파일을 제공해야 함
-      // 현재는 하드코딩된 매핑으로 처리
-      switch (iconUrl) {
-        case 'hanaIcon3d_11.png':
-          return require('../../assets/hana3dIcon/hanaIcon3d_11.png');
-        case 'hanaIcon3d_85.png':
-          return require('../../assets/hana3dIcon/hanaIcon3d_85.png');
-        case 'hanaIcon3d_87.png':
-          return require('../../assets/hana3dIcon/hanaIcon3d_87.png');
-        case 'hanaIcon3d_101.png':
-          return require('../../assets/hana3dIcon/hanaIcon3d_101.png');
-        case 'hanaIcon3d_103.png':
-          return require('../../assets/hana3dIcon/hanaIcon3d_103.png');
-        default:
-          return require('../../assets/hana3dIcon/hanaIcon3d_105.png');
-      }
-    }
-
-    // 기존 타입 기반 매핑 (백업)
     switch (type) {
       case 'ECO_FOOD':
-        return require('../../assets/hana3dIcon/hanaIcon3d_11.png');
-      case 'GREEN_MOBILITY':
-        return require('../../assets/hana3dIcon/hanaIcon3d_85.png');
-      case 'ZERO_WASTE':
-        return require('../../assets/hana3dIcon/hanaIcon3d_87.png');
-      case 'ECO_BRAND':
-        return require('../../assets/hana3dIcon/hanaIcon3d_101.png');
-      case 'SECOND_HAND':
-        return require('../../assets/hana3dIcon/hanaIcon3d_103.png');
-      case 'ORGANIC_FOOD':
-        return require('../../assets/hana3dIcon/hanaIcon3d_11.png');
-      default:
         return require('../../assets/hana3dIcon/hanaIcon3d_105.png');
+      case 'GREEN_MOBILITY':
+        return require('../../assets/hana3dIcon/hanaIcon3d_29.png');
+      case 'ZERO_WASTE':
+        return require('../../assets/hana3dIcon/zero_waste.png');
+      case 'ECO_BRAND':
+        return require('../../assets/hana3dIcon/hanaIcon3d_85.png');
+      case 'SECOND_HAND':
+        return require('../../assets/hana3dIcon/hanaIcon3d_107.png');
+      case 'ORGANIC_FOOD':
+        return require('../../assets/hana3dIcon/hanaIcon3d_105.png');
+      default:
+        return require('../../assets/hana3dIcon/hanaIcon3d_33.png');
     }
   };
 
@@ -269,7 +244,6 @@ export function MyScreen({
   // 탭 변경 시 데이터 로드
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    console.log(`📊 ${tab} 탭으로 변경`);
   };
 
   const renderContent = () => {
@@ -298,11 +272,11 @@ export function MyScreen({
         return (
           <CardsTab
             userCards={userCards}
-            loading={cardLoading}
+            loading={isCardTabLoading}
             error={cardError}
             currentBenefitPackage={currentBenefitPackage}
             scheduledBenefitId={scheduledBenefitId}
-            ecoBenefitsData={ecoBenefitsData}
+            ecoBenefitsData={ecoBenefits}
             allEcoBenefits={allEcoBenefits}
             ecoConsumptionAnalysis={ecoConsumptionAnalysis}
             consumptionSummary={consumptionSummary}
@@ -326,8 +300,8 @@ export function MyScreen({
     }
   };
 
-  const baseTabs = ['적금', '투자', '대출', '카드'];
-  const activeTabs = ['그린적금', '그린투자', '그린대출', '그린카드'];
+  const baseTabs = ['적금', '대출', '카드'];
+  const activeTabs = ['그린적금', '그린대출', '그린카드'];
   
   const tabs = baseTabs.map((tab, index) => {
     if (activeTab === baseTabs[index]) {

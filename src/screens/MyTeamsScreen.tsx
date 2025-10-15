@@ -10,27 +10,19 @@ import { WebSocketTransport } from '../utils/websocketTransport';
 import { isLoggedIn } from '../utils/authUtils';
 import TeamJoinScreen from './TeamJoinScreen';
 import TeamManageScreen from './TeamManageScreen';
+import TeamRankingScreen from './TeamRankingScreen';
 import { useUser } from '../hooks/useUser';
+import { challengeApi } from '../utils/challengeApi';
 
-interface MyTeamsScreenProps { onBack?: () => void; onHome?: () => void }
+interface MyTeamsScreenProps { 
+  onBack?: () => void; 
+  onHome?: () => void;
+  onShowEcoChallenge?: () => void;
+}
 
-// 단일 팀 가입 가정 (백엔드 연동 시 서버에서 내려줌)
-const MY_TEAM = {
-  id: 'green_garden',
-  name: '우리가 일등',
-  slogan: '하루 한 걸음, 지구 백 걸음',
-  completedChallenges: 27,
-  rank: 3,
-  members: 12,
-  owner: '그린리더',
-  createdAt: '2025.03.01',
-  inviteCode: 'GG-7X3K',
-  currentChallenge: '주간 누적 걸음수 대결',
-  totalSeeds: 3450,
-  carbonSavedKg: 42.6,
-};
+// 하드코딩된 목업 데이터 제거 - 백엔드 API에서 실제 데이터를 가져옴
 
-export default function MyTeamsScreen({ onBack, onHome }: MyTeamsScreenProps) {
+export default function MyTeamsScreen({ onBack, onHome, onShowEcoChallenge }: MyTeamsScreenProps) {
   const [draft, setDraft] = useState('');
   const [teamData, setTeamData] = useState<TeamResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,9 +30,11 @@ export default function MyTeamsScreen({ onBack, onHome }: MyTeamsScreenProps) {
   const [transport, setTransport] = useState<ChatTransport | null>(null);
   const [showJoinScreen, setShowJoinScreen] = useState(false);
   const [showManageScreen, setShowManageScreen] = useState(false);
+  const [showRankingScreen, setShowRankingScreen] = useState(false);
   const [loadedMessages, setLoadedMessages] = useState<ChatMessage[]>([]);
   const [noTeam, setNoTeam] = useState(false);
   const [teamMemberCount, setTeamMemberCount] = useState<number>(0);
+  const [currentTeamChallenge, setCurrentTeamChallenge] = useState<any>(null); // 팀장이 참여한 현재 챌린지
   
   // 사용자 정보 가져오기
   const { userInfo } = useUser();
@@ -64,6 +58,7 @@ export default function MyTeamsScreen({ onBack, onHome }: MyTeamsScreenProps) {
         senderId: String(msg.senderId),
         senderName: msg.senderName,
         text: msg.messageText,
+        messageType: msg.messageType,
         createdAt: new Date(msg.createdAt).getTime()
       }));
       
@@ -82,6 +77,41 @@ export default function MyTeamsScreen({ onBack, onHome }: MyTeamsScreenProps) {
     } catch (error) {
       console.error('팀원 수 로드 실패:', error);
       setTeamMemberCount(0);
+    }
+  };
+
+  // 팀장이 참여한 현재 챌린지 로드
+  const loadCurrentTeamChallenge = async (teamId: number) => {
+    try {
+      console.log('🔍 팀 챌린지 참여 상태 조회 시작 - teamId:', teamId);
+      const teamParticipations = await challengeApi.getTeamChallengeParticipations(teamId);
+      console.log('📊 팀 챌린지 참여 상태:', teamParticipations);
+      
+      // 진행 중인 챌린지만 필터링 (완료된 챌린지 제외)
+      const ongoingChallenges = teamParticipations.filter(participation => {
+        const status = participation.verificationStatus;
+        // 진행 중인 상태: PENDING, PARTICIPATED, VERIFYING, NEEDS_REVIEW
+        // 완료된 상태: APPROVED, REJECTED (제외)
+        return status && 
+               status !== 'NOT_PARTICIPATED' && 
+               status !== 'APPROVED' && 
+               status !== 'REJECTED';
+      });
+      
+      console.log('🔄 진행 중인 챌린지:', ongoingChallenges);
+      
+      if (ongoingChallenges.length > 0) {
+        // 가장 최근 참여한 진행 중인 챌린지를 현재 챌린지로 설정
+        const latestChallenge = ongoingChallenges[0];
+        setCurrentTeamChallenge(latestChallenge.challenge);
+        console.log('✅ 현재 진행 중인 팀 챌린지 설정:', latestChallenge.challenge.title, '상태:', latestChallenge.verificationStatus);
+      } else {
+        setCurrentTeamChallenge(null);
+        console.log('📝 진행 중인 팀 챌린지가 없습니다.');
+      }
+    } catch (error) {
+      console.error('❌ 팀 챌린지 참여 상태 가져오기 실패:', error);
+      setCurrentTeamChallenge(null);
     }
   };
 
@@ -118,6 +148,7 @@ export default function MyTeamsScreen({ onBack, onHome }: MyTeamsScreenProps) {
       setLoading(true);
       setError(null);
       setNoTeam(false);
+      console.log('🔍 팀 데이터 로드 시작');
       const data = await teamApi.getMyTeam();
       
       if (data === null) {
@@ -126,43 +157,28 @@ export default function MyTeamsScreen({ onBack, onHome }: MyTeamsScreenProps) {
         setNoTeam(true);
         setTeamData(null);
       } else {
+        console.log('📊 팀 데이터 로드 완료:', {
+          teamId: data.id,
+          teamName: data.name,
+          monthlyPoints: data.stats.monthlyPoints,
+          monthlyCarbonSaved: data.stats.carbonSavedKg,
+          totalSeeds: data.totalSeeds,
+          carbonSavedKg: data.carbonSavedKg
+        });
         setTeamData(data);
         loadChatMessages(data.id);
         // 팀원 수 로드
         loadTeamMemberCount(data.id);
+        // 팀장이 참여한 현재 챌린지 로드
+        loadCurrentTeamChallenge(data.id);
       }
     } catch (err: any) {
       console.error('팀 데이터 로드 실패:', err);
       setError('팀 정보를 불러오는데 실패했습니다.');
       
-      // 에러 시 목업 데이터 사용
-      const mockData = {
-        id: 1,
-        name: '우리가 일등',
-        slogan: '하루 한 걸음, 지구 백 걸음',
-        completedChallenges: 27,
-        rank: 3,
-        members: 12,
-        owner: '그린리더',
-        createdAt: '2025.03.01',
-        inviteCode: 'GG-7X3K',
-        currentChallenge: '주간 누적 걸음수 대결',
-        totalSeeds: 3450,
-        carbonSavedKg: 42.6,
-        emblems: [],
-        stats: {
-          monthlyPoints: 1250,
-          totalPoints: 3450,
-          monthlyRank: 3,
-          totalRank: 3,
-          carbonSavedKg: 42.6,
-          activeMembers: 12,
-          completedChallengesThisMonth: 8
-        }
-      };
-      setTeamData(mockData);
-      // 목업 데이터로도 채팅 메시지 로드 시도
-      loadChatMessages(mockData.id);
+      // 에러 시 빈 상태로 설정 (목업 데이터 제거)
+      setTeamData(null);
+      setNoTeam(true);
     } finally {
       setLoading(false);
     }
@@ -262,6 +278,19 @@ export default function MyTeamsScreen({ onBack, onHome }: MyTeamsScreenProps) {
     );
   }
 
+  // 팀 랭킹 화면 표시
+  if (showRankingScreen) {
+    console.log('🏆 팀 랭킹 화면 표시 중...');
+    return (
+      <TeamRankingScreen
+        onBack={() => {
+          console.log('🏆 팀 랭킹 화면에서 뒤로가기');
+          setShowRankingScreen(false);
+        }}
+      />
+    );
+  }
+
   // 팀 관리 화면 표시
   if (showManageScreen && teamData) {
     return (
@@ -279,7 +308,7 @@ export default function MyTeamsScreen({ onBack, onHome }: MyTeamsScreenProps) {
       <View style={styles.container}>
         <TopBar title="My팀" onBack={onBack} onHome={onHome} />
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>팀 정보를 불러오는 중... 🌱</Text>
+          <Text style={styles.loadingText}>팀 정보를 불러오는 중...</Text>
         </View>
       </View>
     );
@@ -310,6 +339,17 @@ export default function MyTeamsScreen({ onBack, onHome }: MyTeamsScreenProps) {
             <Ionicons name="add-circle" size={24} color="#FFFFFF" />
             <Text style={styles.joinTeamButtonText}>팀 가입하기</Text>
           </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.rankingButton}
+            onPress={() => {
+              console.log('🏆 팀 랭킹 버튼 클릭됨 (팀 없음)');
+              setShowRankingScreen(true);
+            }}
+          >
+            <Ionicons name="trophy" size={24} color="#008986" />
+            <Text style={styles.rankingButtonText}>팀 랭킹 보기</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -325,8 +365,7 @@ export default function MyTeamsScreen({ onBack, onHome }: MyTeamsScreenProps) {
           <View style={styles.teamHeaderRow}>
             <View style={styles.teamNameSection}>
               <View style={styles.teamNameRow}>
-                <Text style={styles.teamNameBig}>{teamData.name} 🌱</Text>
-                <View style={styles.rankBadge}><Text style={styles.rankText}>🏆 {teamData.rank}위</Text></View>
+                <Text style={styles.teamNameBig}>{teamData.name}</Text>
               </View>
               <Text style={styles.teamSlogan}>{teamData.slogan}</Text>
             </View>
@@ -366,23 +405,7 @@ export default function MyTeamsScreen({ onBack, onHome }: MyTeamsScreenProps) {
           <View style={styles.metaRow}>
             <Text style={styles.metaText}>방장 {teamData.owner}</Text>
             <Text style={styles.dot}>·</Text>
-            <Text style={styles.metaText}>개설 {(() => {
-              try {
-                const date = new Date(teamData.createdAt);
-                if (isNaN(date.getTime())) {
-                  // Invalid date인 경우 기본값 반환
-                  return '2025.01.01';
-                }
-                return date.toLocaleDateString('ko-KR', { 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                });
-              } catch (error) {
-                console.error('날짜 파싱 오류:', error);
-                return '2025.01.01';
-              }
-            })()}</Text>
+            <Text style={styles.metaText}>개설 {teamData.createdAt}</Text>
             <Text style={styles.dot}>·</Text>
             <Text style={styles.inviteText}>초대코드 {teamData.inviteCode}</Text>
           </View>
@@ -392,7 +415,12 @@ export default function MyTeamsScreen({ onBack, onHome }: MyTeamsScreenProps) {
               <Text style={styles.statLabel}>성공한 챌린지</Text>
             </View>
             <View style={styles.statChip}>
-              <Text style={styles.statValue}>{teamData.members}</Text>
+              <Text style={styles.statValue}>
+                {teamData.maxMembers 
+                  ? `${teamData.members} / ${teamData.maxMembers}`
+                  : teamData.members
+                }
+              </Text>
               <Text style={styles.statLabel}>팀원 수</Text>
             </View>
           </View>
@@ -400,25 +428,62 @@ export default function MyTeamsScreen({ onBack, onHome }: MyTeamsScreenProps) {
 
 
           {/* 진행 중 챌린지 */}
-          <View style={styles.currentChallengeCard}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.currentTitle}>진행 중 챌린지</Text>
-              <Text style={styles.currentSubtitle}>{teamData.currentChallenge}</Text>
+          {currentTeamChallenge ? (
+            <View style={styles.currentChallengeCard}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.currentTitle}>진행 중 챌린지</Text>
+                <Text style={styles.currentSubtitle}>{currentTeamChallenge.title}</Text>
+              </View>
+              <Pressable 
+                style={styles.participateBtn}
+                onPress={() => {
+                  // 챌린지 세부내역으로 이동하는 로직
+                  console.log('챌린지 세부내역으로 이동:', currentTeamChallenge.id);
+                  if (onShowEcoChallenge) {
+                    onShowEcoChallenge();
+                  }
+                }}
+              >
+                <Text style={styles.participateText}>바로가기</Text>
+              </Pressable>
             </View>
-            <Pressable style={styles.participateBtn}><Text style={styles.participateText}>바로가기</Text></Pressable>
-          </View>
+          ) : (
+            <View style={styles.currentChallengeCard}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.currentTitle}>진행 중 챌린지</Text>
+                <Text style={styles.currentSubtitle}>참여한 챌린지가 없습니다</Text>
+              </View>
+              <Pressable 
+                style={[styles.participateBtn, { opacity: 0.5 }]}
+                disabled={true}
+              >
+                <Text style={styles.participateText}>바로가기</Text>
+              </Pressable>
+            </View>
+          )}
 
           {/* 누적 성과 */}
           <View style={styles.accumRow}>
+            <TouchableOpacity 
+              style={styles.accumChipClickable}
+              onPress={() => {
+                console.log('🏆 팀 랭킹 버튼 클릭됨');
+                setShowRankingScreen(true);
+              }}
+            >
+              <Image source={require('../../assets/hana3dIcon/hanaIcon3d_51.png')} style={styles.accumIcon} />
+              <Text style={styles.accumLabel}>팀 랭킹</Text>
+              <Text style={styles.accumValue}>{teamData.rank}위</Text>
+            </TouchableOpacity>
             <View style={styles.accumChip}>
-              <Image source={require('../../assets/hana3dIcon/hanaIcon3d_123.png')} style={styles.accumIcon} />
+              <Image source={require('../../assets/hana3dIcon/hanaIcon3d_119.png')} style={styles.accumIcon} />
               <Text style={styles.accumLabel}>팀 포인트</Text>
-              <Text style={styles.accumValue}>{teamData.totalSeeds.toLocaleString()}P</Text>
+              <Text style={styles.accumValue}>{(teamData.stats.monthlyPoints || 0).toLocaleString()}P</Text>
             </View>
             <View style={styles.accumChip}>
               <Image source={require('../../assets/hana3dIcon/hanaIcon3d_47.png')} style={styles.accumIcon} />
-              <Text style={styles.accumLabel}>탄소절감</Text>
-              <Text style={styles.accumValue}>{teamData.carbonSavedKg}kg</Text>
+              <Text style={styles.accumLabel}>탄소절약</Text>
+              <Text style={styles.accumValue}>{teamData.stats.monthlyCarbonSaved || 0}kg</Text>
             </View>
           </View>
         </View>
@@ -434,20 +499,23 @@ export default function MyTeamsScreen({ onBack, onHome }: MyTeamsScreenProps) {
             {displayMessages.map((m, index) => {
               const isMe = m.senderId === CURRENT_USER.id;
               const name = m.senderName || (isMe ? CURRENT_USER.name : '알수없음');
-              
-              // 디버깅 로그 추가
-              console.log('🎯 메시지 디버깅:', {
-                messageId: m.id,
-                senderId: m.senderId,
-                senderIdType: typeof m.senderId,
-                currentUserId: CURRENT_USER.id,
-                currentUserIdType: typeof CURRENT_USER.id,
-                isMe: isMe,
-                text: m.text
-              });
+              const isSystemMessage = m.messageType === 'SYSTEM';
               
               // 고유한 key 생성: messageId + index + timestamp
               const uniqueKey = `${m.id || 'msg'}_${index}_${m.createdAt || Date.now()}`;
+              
+              // 시스템 메시지인 경우 다르게 렌더링
+              if (isSystemMessage) {
+                return (
+                  <View key={uniqueKey} style={styles.systemMessageRow}>
+                    <View style={styles.systemMessageBubble}>
+                      <Text style={styles.systemMessageText}>{m.text}</Text>
+                    </View>
+                  </View>
+                );
+              }
+              
+              // 일반 메시지 렌더링
               return (
                 <View key={uniqueKey} style={[styles.msgRow, isMe ? styles.rowMe : styles.rowOther]}>
                   <Text style={[styles.nameText, isMe && styles.nameRight]}>{name}</Text>
@@ -462,7 +530,7 @@ export default function MyTeamsScreen({ onBack, onHome }: MyTeamsScreenProps) {
             <TextInput 
               value={draft} 
               onChangeText={setDraft} 
-              placeholder="메시지를 입력하세요 💬" 
+              placeholder="메시지를 입력하세요" 
               style={styles.input}
               multiline
               maxLength={1000}
@@ -478,9 +546,11 @@ export default function MyTeamsScreen({ onBack, onHome }: MyTeamsScreenProps) {
               }}
               disabled={!draft.trim()}
             >
-              <Text style={[styles.sendText, !draft.trim() && styles.sendTextDisabled]}>
-                {transport ? '⬆️' : '⬆️'}
-              </Text>
+              <Ionicons 
+                name="arrow-up" 
+                size={20 * SCALE} 
+                color={draft.trim() ? '#008986' : '#D1D5DB'} 
+              />
             </Pressable>
           </View>
         </View>
@@ -583,6 +653,23 @@ const styles = StyleSheet.create({
   other: { alignSelf: 'flex-start', backgroundColor: '#F3F4F6' },
   msgText: { fontSize: 14 * SCALE, color: '#111827' },
   nameText: { fontSize: 11 * SCALE, color: '#6B7280', marginBottom: 4 * SCALE },
+  systemMessageRow: {
+    alignItems: 'center',
+    marginVertical: 8 * SCALE,
+  },
+  systemMessageBubble: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 16 * SCALE,
+    paddingHorizontal: 12 * SCALE,
+    paddingVertical: 6 * SCALE,
+    maxWidth: '80%',
+  },
+  systemMessageText: {
+    fontSize: 12 * SCALE,
+    color: '#6B7280',
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
   nameRight: { textAlign: 'right', alignSelf: 'flex-end' },
   sectionTitle: { fontSize: 14 * SCALE, color: '#111827', fontWeight: '800', marginTop: 14 * SCALE, marginBottom: 8 * SCALE },
   emblemRow: { flexDirection: 'row', gap: 10 * SCALE, marginBottom: 8 * SCALE },
@@ -594,17 +681,16 @@ const styles = StyleSheet.create({
   currentSubtitle: { fontSize: 14 * SCALE, color: '#065F46', marginTop: 2 * SCALE },
   participateBtn: { backgroundColor: '#065F46', paddingHorizontal: 10 * SCALE, paddingVertical: 8 * SCALE, borderRadius: 10 * SCALE },
   participateText: { color: '#FFFFFF', fontSize: 12 * SCALE, fontWeight: '700' },
-  accumRow: { flexDirection: 'row', gap: 12 * SCALE, marginTop: 12 * SCALE },
+  accumRow: { flexDirection: 'row', gap: 8 * SCALE, marginTop: 12 * SCALE },
   accumChip: { flex: 1, backgroundColor: '#FFFFFF', borderRadius: 12 * SCALE, padding: 12 * SCALE, borderWidth: 1, borderColor: '#E5E7EB', alignItems: 'center' },
-  accumIcon: { width: 20 * SCALE, height: 20 * SCALE, marginBottom: 6 * SCALE },
+  accumChipClickable: { flex: 1, backgroundColor: '#FFFFFF', borderRadius: 12 * SCALE, padding: 12 * SCALE, borderWidth: 1, borderColor: '#E5E7EB', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3, elevation: 3 },
+  accumIcon: { width: 26 * SCALE, height: 26 * SCALE, marginBottom: 6 * SCALE },
   accumLabel: { fontSize: 12 * SCALE, color: '#6B7280' },
   accumValue: { fontSize: 14 * SCALE, color: '#111827', fontWeight: '800', marginTop: 2 * SCALE },
   inputRow: { flexDirection: 'row', alignItems: 'center', padding: 8 * SCALE, backgroundColor: '#F7F8FA', borderTopWidth: 1, borderTopColor: '#E5E7EB' },
   input: { flex: 1, backgroundColor: '#FFFFFF', borderRadius: 22 * SCALE, paddingHorizontal: 14 * SCALE, paddingVertical: 10 * SCALE, marginRight: 8 * SCALE, fontSize: 14 * SCALE, borderWidth: 1, borderColor: '#E5E7EB' },
   sendBtn: { backgroundColor: '#FFFFFF', paddingHorizontal: 12 * SCALE, paddingVertical: 10 * SCALE, borderRadius: 22 * SCALE, borderWidth: 1, borderColor: '#E5E7EB' },
   sendBtnDisabled: { backgroundColor: '#F3F4F6', borderColor: '#D1D5DB' },
-  sendText: { color: '#0F8A80', fontWeight: '700', fontSize: 12 * SCALE },
-  sendTextDisabled: { color: '#9CA3AF' },
   
   // 로딩 및 에러 스타일
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 * SCALE },
@@ -664,6 +750,28 @@ const styles = StyleSheet.create({
   },
   joinTeamButtonText: { 
     color: '#FFFFFF', 
+    fontSize: 16 * SCALE, 
+    fontWeight: '600',
+    marginLeft: 8 * SCALE
+  },
+  rankingButton: { 
+    backgroundColor: '#FFFFFF', 
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 32 * SCALE, 
+    paddingVertical: 16 * SCALE, 
+    borderRadius: 12 * SCALE,
+    borderWidth: 2,
+    borderColor: '#008986',
+    marginTop: 12 * SCALE,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  rankingButtonText: { 
+    color: '#008986', 
     fontSize: 16 * SCALE, 
     fontWeight: '600',
     marginLeft: 8 * SCALE

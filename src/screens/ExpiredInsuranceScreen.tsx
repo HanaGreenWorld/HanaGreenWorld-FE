@@ -13,7 +13,6 @@ export function ExpiredInsuranceScreen({ expiredInsuranceData, onBack }: Expired
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={onBack} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color={COLORS.text} />
@@ -32,7 +31,6 @@ export function ExpiredInsuranceScreen({ expiredInsuranceData, onBack }: Expired
         </View>
       ) : (
         <View style={styles.listBox}>
-          {/* TODO: 리스트 렌더링 */}
         </View>
       )}
     </View>
@@ -80,6 +78,5 @@ const styles = StyleSheet.create({
   listBox: {
     flex: 1,
     paddingHorizontal: 20 * SCALE,
-    // TODO: 리스트 스타일
   },
 }); 

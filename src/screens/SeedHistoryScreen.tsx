@@ -127,14 +127,12 @@ export default function SeedHistoryScreen({ onBack }: SeedHistoryScreenProps) {
       >
         {loading ? (
           <View style={styles.loadingContainer}>
-            <Text style={styles.loadingIcon}>🌱</Text>
-            <Text style={styles.loadingText}>씨앗 내역을 불러오는 중...</Text>
+            <Text style={styles.loadingText}>챌린지 내역 불러오는 중...</Text>
           </View>
         ) : challengeRecords.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>🌿</Text>
             <Text style={styles.emptyTitle}>아직 참여한 챌린지가 없어요</Text>
-            <Text style={styles.emptyText}>에코 챌린지에 참여해서 씨앗을 모아보세요! 🌱</Text>
+            <Text style={styles.emptyText}>에코 챌린지에 참여해서 씨앗을 모아보세요!</Text>
           </View>
         ) : (
           <>

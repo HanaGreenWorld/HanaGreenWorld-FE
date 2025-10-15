@@ -114,8 +114,8 @@ export default function ElectronicReceiptScreen({ onBack, onHome, onOpenCarbonGu
         {!loading && !error && records.length === 0 && (
           <View style={styles.emptyContainer}>
             <Ionicons.Ionicons name="receipt-outline" size={48} color="#CCCCCC" />
-            <Text style={styles.emptyText}>아직 발급된 전자확인증이 없습니다.</Text>
-            <Text style={styles.emptySubText}>하나은행에서 전자확인증을 발급받으면 자동으로 적립됩니다.</Text>
+            <Text style={styles.emptyText}>발급된 전자확인증이 없습니다.</Text>
+            <Text style={styles.emptySubText}>하나은행에서 전자확인증을 발급받으면{'\n'}자동으로 적립됩니다.</Text>
           </View>
         )}
 
