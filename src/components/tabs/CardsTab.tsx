@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SCALE, getCardImageSource } from '../../utils/constants';
+import { SCALE, getCardImageSource, getEcoMerchantIconSource } from '../../utils/constants';
 import { LoadingState } from '../LoadingState';
 import { ErrorState } from '../ErrorState';
 import { NoDataState } from '../NoDataState';
@@ -21,7 +21,7 @@ interface CardsTabProps {
   error: string | null;
   currentBenefitPackage?: string;
   scheduledBenefitId?: string | null;
-  ecoBenefitsData?: any[];
+  ecoBenefitsData?: any;
   allEcoBenefits?: any[];
   ecoConsumptionAnalysis?: any;
   consumptionSummary?: any;
@@ -48,20 +48,10 @@ export const CardsTab: React.FC<CardsTabProps> = ({
   onShowEcoBenefitsDetail,
   onBenefitChange
 }) => {
-  // 디버깅 로그 추가
-  console.log('💳 CardsTab 렌더링:', {
-    userCards,
-    loading,
-    error,
-    currentBenefitPackage,
-    scheduledBenefitId,
-    cardsLength: userCards?.length || 0
-  });
   
-  // 카드 데이터 상세 로그
-  if (userCards && userCards.length > 0) {
-    console.log('💳 첫 번째 카드 상세 데이터:', userCards[0]);
-  }
+  const hasCards = userCards.length > 0;
+  const hasEcoData = ecoBenefitsData && ecoBenefitsData.benefits && ecoBenefitsData.benefits.length > 0;
+  
   const benefitTitles: Record<string, string> = {
     all_green_life: '올인원 그린라이프 캐시백',
     green_mobility: '그린 모빌리티 캐시백',
@@ -119,7 +109,11 @@ export const CardsTab: React.FC<CardsTabProps> = ({
   }
 
   return (
-    <ScrollView style={styles.cardsContent} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      style={styles.cardsContent} 
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.scrollContentContainer}
+    >
       {/* 사용자 카드 목록 */}
       {userCards.length > 0 ? (
         userCards.map((card, index) => {
@@ -181,7 +175,7 @@ export const CardsTab: React.FC<CardsTabProps> = ({
       )}
 
       {/* 카드가 있을 때만 현재 선택된 혜택 표시 */}
-      {userCards.length > 0 && (
+      {/* {userCards.length > 0 && (
         <View style={styles.currentBenefitCard}>
           <View style={styles.currentBenefitHeader}>
             <View style={styles.currentBenefitTitleContainer}>
@@ -254,7 +248,7 @@ export const CardsTab: React.FC<CardsTabProps> = ({
             </View>
           </ScrollView>
         </View>
-      )}
+      )} */}
 
       {/* 카드가 있을 때만 이번달 친환경 소비 현황 표시 */}
       {userCards.length > 0 && (
@@ -264,7 +258,10 @@ export const CardsTab: React.FC<CardsTabProps> = ({
             <PieChart 
               data={pieChartData} 
               size={160 * SCALE} 
-              strokeWidth={40 * SCALE} 
+              strokeWidth={40 * SCALE}
+              showCenterText={true}
+              centerText={`${totalConsumptionAmount.toLocaleString()}원`}
+              animated={true}
             />
             <View style={styles.chartLegend}>
               <Text style={styles.totalAmount}>{totalConsumptionAmount.toLocaleString()}원</Text>
@@ -280,7 +277,7 @@ export const CardsTab: React.FC<CardsTabProps> = ({
       )}
 
       {/* 카드가 있을 때만 이번달 친환경 혜택 표시 */}
-      {userCards.length > 0 && ecoBenefitsData && ecoBenefitsData.length > 0 && (
+      {userCards.length > 0 && ecoBenefitsData && ecoBenefitsData.benefits && ecoBenefitsData.benefits.length > 0 && (
         <View style={styles.ecoBenefitsSection}>
           <View style={styles.ecoBenefitsHeader}>
             <Text style={styles.ecoBenefitsTitle}>이번달 친환경 가맹점 혜택</Text>
@@ -292,17 +289,17 @@ export const CardsTab: React.FC<CardsTabProps> = ({
             </Pressable>
           </View>
           <View style={styles.ecoBenefitsList}>
-            {ecoBenefitsData.map((benefit: any, index: number) => (
+            {ecoBenefitsData.benefits.map((benefit: any, index: number) => (
               <View key={`eco-benefit-${index}`} style={styles.ecoBenefitItem}>
                 <View style={styles.ecoBenefitIcon}>
-                  <Image source={benefit.icon} style={styles.ecoBenefitIconImage} resizeMode="contain" />
+                  <Image source={getEcoMerchantIconSource(benefit.icon)} style={styles.ecoBenefitIconImage} resizeMode="contain" />
                 </View>
                 <View style={styles.ecoBenefitInfo}>
                   <Text style={styles.ecoBenefitName}>{benefit.storeName}</Text>
-                  <Text style={styles.ecoBenefitBenefitName}>{benefit.benefitName}</Text>
+                  <Text style={styles.ecoBenefitBenefitName}>{benefit.amount}</Text>
                 </View>
                 <View style={styles.ecoBenefitRight}>
-                  <Text style={styles.ecoBenefitAmount}>{benefit.amount}</Text>
+                  <Text style={styles.ecoBenefitAmount}>+{benefit.additionalSeeds} 씨앗</Text>
                   <Text style={styles.ecoBenefitDate}>{benefit.date}</Text>
                 </View>
               </View>
@@ -321,7 +318,7 @@ export const CardsTab: React.FC<CardsTabProps> = ({
       )}
 
       {/* 카드가 있을 때만 이달의 추천 혜택 표시 */}
-      {userCards.length > 0 && (
+      {/* {userCards.length > 0 && (
         <View style={styles.recommendedBenefitSection}>
         <View style={styles.modernBenefitCard}>
           <View style={styles.modernBenefitHeader}>
@@ -329,10 +326,10 @@ export const CardsTab: React.FC<CardsTabProps> = ({
             <View style={styles.benefitIconCircle}>
               <Text style={styles.benefitMainEmoji}>🚲</Text>
             </View>
-          </View>
+          </View> */}
 
           {/* 메인 콘텐츠 */}
-          <View style={styles.modernBenefitContent}>
+          {/* <View style={styles.modernBenefitContent}>
             <View style={styles.titleWithBadgeRow}>
               <Text style={styles.modernBenefitName}>그린 모빌리티 캐시백</Text>
               <View style={styles.inlineBadge}>
@@ -340,9 +337,9 @@ export const CardsTab: React.FC<CardsTabProps> = ({
               </View>
             </View>
             <Text style={styles.modernBenefitDesc}>친환경 교통수단 이용시 최대 10% 캐시백</Text>
-            
+             */}
             {/* 통계 정보 */}
-            <View style={styles.benefitStatsContainer}>
+            {/* <View style={styles.benefitStatsContainer}>
               <View style={styles.benefitStatItem}>
                 <Text style={styles.benefitStatValue}>326,000원</Text>
                 <Text style={styles.benefitStatLabel}>지난달 그린 모빌리티 사용액</Text>
@@ -353,10 +350,10 @@ export const CardsTab: React.FC<CardsTabProps> = ({
                 <Text style={styles.benefitStatLabel}>예상 추가 캐시백</Text>
               </View>
             </View>
-          </View>
+          </View> */}
 
           {/* CTA 버튼 */}
-          <Pressable 
+          {/* <Pressable 
             style={styles.modernBenefitCTA} 
             onPress={() => onBenefitChange && onBenefitChange('green_mobility')}
           >
@@ -365,7 +362,7 @@ export const CardsTab: React.FC<CardsTabProps> = ({
           </Pressable>
         </View>
         </View>
-      )}
+      )} */}
 
     </ScrollView>
   );
@@ -375,6 +372,9 @@ const styles = StyleSheet.create({
   cardsContent: {
     flex: 1,
     paddingHorizontal: 20 * SCALE,
+  },
+  scrollContentContainer: {
+    paddingBottom: 100 * SCALE, // 하단 여백 추가
   },
   
   // 추천 섹션 스타일 (적금 탭과 동일)
@@ -456,7 +456,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginHorizontal: 16 * SCALE,
+    marginHorizontal: 8 * SCALE,
   },
   cardTextContainer: {
     flex: 1,
@@ -467,16 +467,13 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   currentMonthContainer: {
-    marginTop: 16 * SCALE,
-    paddingVertical: 4 * SCALE,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 6 * SCALE,
+    marginTop: 24 * SCALE,
     alignSelf: 'flex-start',
   },
   currentMonthText: {
-    fontSize: 24 * SCALE,
+    fontSize: 22 * SCALE,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#0A594E',
   },
   cardNumber: {
     fontSize: 14 * SCALE,
@@ -493,7 +490,14 @@ const styles = StyleSheet.create({
     width: 280 * SCALE,
     height: 150 * SCALE,
     borderRadius: 12 * SCALE,
+    marginRight: 12 * SCALE,
     marginBottom: 8 * SCALE,
+    // 카드 이미지 그림자 효과
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 6,
   },
   
   // 추천 카드 섹션
@@ -704,8 +708,8 @@ const styles = StyleSheet.create({
     marginBottom: 8 * SCALE,
   },
   legendColor: {
-    width: 16 * SCALE,
-    height: 16 * SCALE,
+    width: 12 * SCALE,
+    height: 12 * SCALE,
     borderRadius: 8 * SCALE,
     marginRight: 8 * SCALE,
   },
@@ -876,17 +880,13 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F3F4F6',
   },
   ecoBenefitIcon: {
-    width: 40 * SCALE,
-    height: 40 * SCALE,
-    borderRadius: 20 * SCALE,
-    backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12 * SCALE,
   },
   ecoBenefitIconImage: {
-    width: 32 * SCALE,
-    height: 32 * SCALE,
+    width: 44 * SCALE,
+    height: 44 * SCALE,
   },
   ecoBenefitInfo: {
     flex: 1,

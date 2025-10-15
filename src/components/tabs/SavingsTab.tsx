@@ -31,7 +31,6 @@ export const SavingsTab: React.FC<SavingsTabProps> = ({
   onNavigateToSavings,
   onShowEarthSavingsDetail
 }) => {
-  // 디버깅 로그 추가
   console.log('🏦 SavingsTab 렌더링:', {
     savingsAccounts,
     loading,
@@ -391,6 +390,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+    marginBottom: 12 * SCALE,
   },
   earthCardHeaderRow: {
     flexDirection: 'row',

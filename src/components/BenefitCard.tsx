@@ -44,7 +44,7 @@ export const BenefitCard: React.FC<BenefitCardProps> = ({
         <View style={styles.currentBenefitTitleContainer}>
           <Text style={styles.currentBenefitLabel}>적용 혜택</Text>
           <Text style={styles.currentBenefitTitle}>
-            {currentBenefitPackage ? `${currentBenefitPackage} 캐시백` : '친환경 생활 종합 혜택'}
+            {currentBenefitPackage ? `${currentBenefitPackage}` : '친환경 생활 종합 혜택'}
           </Text>
         </View>
         <Pressable style={styles.changeBenefitButton} onPress={onShowBenefitChange}>

@@ -29,7 +29,6 @@ export const BondsTab: React.FC<BondsTabProps> = ({
   loading,
   error
 }) => {
-  // 디버깅 로그 추가
   console.log('🏦 BondsTab 렌더링:', {
     loanAccounts,
     loading,
@@ -76,7 +75,6 @@ export const BondsTab: React.FC<BondsTabProps> = ({
               <Text style={styles.earthInfoValue}>{(loan.monthlyPayment || 0).toLocaleString()}원</Text>
             </View>
             
-            {/* 금리 정보 */}
             <View style={styles.earthRateGroup}>
               <Text style={styles.earthRateHeader}>대출 금리</Text>
               <View style={styles.earthRateRow}>
@@ -102,7 +100,6 @@ export const BondsTab: React.FC<BondsTabProps> = ({
               </View>
             </View>
             
-            {/* 상환 진행률 */}
             <View style={[styles.savingsProgressSection, { marginTop: 8 * SCALE }]}>
               <View style={styles.savingsProgressBar}>
                 <View style={[styles.savingsProgressFill, { width: `${((((loan.loanAmount || 0) - (loan.remainingAmount || 0)) / (loan.loanAmount || 1)) * 100)}%` }]} />
@@ -124,7 +121,6 @@ export const BondsTab: React.FC<BondsTabProps> = ({
         />
       )}
 
-      {/* 하나솔라론 추천 섹션 - 항상 표시 */}
       <View style={styles.recommendSection}> 
         <Text style={styles.recommendTitle}>태양광 발전소를 건설하는{'\n'}발전사업자라면?</Text>
       </View>

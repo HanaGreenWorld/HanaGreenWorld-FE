@@ -347,7 +347,8 @@ export const ScreenRenderer: React.FC = () => {
       return (
         <MyTeamsScreen 
           onBack={() => setActiveTab('greenplay')} 
-          onHome={() => setActiveTab('mockhome')} 
+          onHome={() => setActiveTab('mockhome')}
+          onShowEcoChallenge={() => setShowEcoChallenge(true)}
         />
       );
     case 'report':

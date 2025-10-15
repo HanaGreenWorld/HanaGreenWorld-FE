@@ -11,20 +11,17 @@ export function Header() {
   const { userInfo, loading } = useUser();
   const insets = useSafeAreaInsets();
   
-  // 사용자 이름의 첫 글자를 아바타로 사용
   const getAvatarText = () => {
     if (loading || !userInfo) return '?';
     return userInfo.name.charAt(0);
   };
 
-  // 사용자 이름 표시
   const getUserName = () => {
     if (loading) return '로딩 중...';
     if (!userInfo) return '사용자';
     return `${userInfo.name}님`;
   };
 
-  // 로그아웃 처리
   const handleLogout = () => {
     Alert.alert(
       '로그아웃',
@@ -53,7 +50,7 @@ export function Header() {
   };
 
   return (
-    <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
+    <View style={[styles.headerContainer]}>
       <LinearGradient
         colors={[COLORS.primary, '#0A5A4F', '#0D4A42']}
         start={{ x: 0, y: 0 }}
@@ -84,7 +81,7 @@ export function Header() {
 const styles = StyleSheet.create({
   headerContainer: {
     paddingHorizontal: 15 * SCALE,
-    paddingBottom: 20 * SCALE, // paddingTop은 동적으로 적용
+    paddingVertical: 20 * SCALE,
   },
   header: {
     borderRadius: 36 * SCALE,

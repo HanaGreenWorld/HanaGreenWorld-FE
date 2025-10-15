@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Circle, G, Path } from 'react-native-svg';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated, Pressable } from 'react-native';
+import Svg, { Circle, G, Path, Defs, LinearGradient, Stop, Filter, FeDropShadow } from 'react-native-svg';
 import { SCALE } from '../utils/constants';
 
 interface PieChartData {
@@ -13,9 +13,34 @@ interface PieChartProps {
   data: PieChartData[];
   size?: number;
   strokeWidth?: number;
+  showCenterText?: boolean;
+  centerText?: string;
+  animated?: boolean;
 }
 
-export function PieChart({ data, size = 120, strokeWidth = 40 }: PieChartProps) {
+export function PieChart({ 
+  data, 
+  size = 120, 
+  strokeWidth = 40, 
+  showCenterText = true,
+  centerText,
+  animated = true 
+}: PieChartProps) {
+  const animatedValue = useRef(new Animated.Value(0)).current;
+  const [selectedIndex, setSelectedIndex] = React.useState<number | null>(null);
+
+  useEffect(() => {
+    if (animated) {
+      Animated.timing(animatedValue, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: false,
+      }).start();
+    } else {
+      animatedValue.setValue(1);
+    }
+  }, [animated, animatedValue]);
+
   // 데이터 검증 및 정규화
   const validatedData = data.map(item => ({
     ...item,
@@ -35,15 +60,30 @@ export function PieChart({ data, size = 120, strokeWidth = 40 }: PieChartProps) 
     return (
       <View style={styles.container}>
         <Svg width={size} height={size}>
+          <Defs>
+            <LinearGradient id="emptyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <Stop offset="0%" stopColor="#E5E7EB" stopOpacity="1" />
+              <Stop offset="100%" stopColor="#D1D5DB" stopOpacity="1" />
+            </LinearGradient>
+            <Filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+              <FeDropShadow dx="0" dy="4" stdDeviation="8" floodColor="#000000" floodOpacity="0.1"/>
+            </Filter>
+          </Defs>
           <Circle
             cx={size / 2}
             cy={size / 2}
             r={radius}
-            fill="#E5E7EB"
+            fill="url(#emptyGradient)"
             stroke="#D1D5DB"
             strokeWidth={2}
+            filter="url(#shadow)"
           />
         </Svg>
+        {showCenterText && (
+          <View style={[styles.centerText, { width: size, height: size }]}>
+            <Text style={styles.centerTextValue}>데이터 없음</Text>
+          </View>
+        )}
       </View>
     );
   }
@@ -54,16 +94,27 @@ export function PieChart({ data, size = 120, strokeWidth = 40 }: PieChartProps) 
   return (
     <View style={styles.container}>
       <Svg width={size} height={size}>
+        <Defs>
+          {validatedData.map((item, index) => (
+            <LinearGradient key={`gradient-${index}`} id={`gradient-${index}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <Stop offset="0%" stopColor={item.color} stopOpacity="1" />
+              <Stop offset="100%" stopColor={item.color} stopOpacity="0.7" />
+            </LinearGradient>
+          ))}
+          <Filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+            <FeDropShadow dx="0" dy="6" stdDeviation="12" floodColor="#000000" floodOpacity="0.15"/>
+          </Filter>
+        </Defs>
         <G>
           {validatedData.map((item, index) => {
             const percentage = item.value / total;
-            const angle = Math.max(0, Math.min(360, percentage * 360)); // 0-360도 범위로 제한
+            const angle = Math.max(0, Math.min(360, percentage * 360));
             
             // 시작점과 끝점 계산
             const startAngle = currentAngle;
             const endAngle = currentAngle + angle;
             
-            // 시작점과 끝점의 좌표 계산 (NaN 방지)
+            // 시작점과 끝점의 좌표 계산
             const startAngleRad = (startAngle - 90) * Math.PI / 180;
             const endAngleRad = (endAngle - 90) * Math.PI / 180;
             
@@ -74,7 +125,6 @@ export function PieChart({ data, size = 120, strokeWidth = 40 }: PieChartProps) 
             
             // NaN 값 검증
             if (isNaN(startX) || isNaN(startY) || isNaN(endX) || isNaN(endY)) {
-              console.warn('PieChart: Invalid coordinates detected', { item, startAngle, endAngle });
               return null;
             }
             
@@ -91,18 +141,33 @@ export function PieChart({ data, size = 120, strokeWidth = 40 }: PieChartProps) 
             
             currentAngle += angle;
             
+            const isSelected = selectedIndex === index;
+            const scale = isSelected ? 1.05 : 1;
+            const opacity = isSelected ? 1 : 0.9;
+            
             return (
-              <Path
-                key={index}
-                d={path}
-                fill={item.color}
-              />
+              <G key={index} transform={`scale(${scale})`} opacity={opacity}>
+                <Path
+                  d={path}
+                  fill={`url(#gradient-${index})`}
+                  filter="url(#shadow)"
+                  stroke={isSelected ? '#FFFFFF' : 'transparent'}
+                  strokeWidth={isSelected ? 3 : 0}
+                />
+              </G>
             );
           }).filter(Boolean)}
         </G>
       </Svg>
       
-      
+      {/* {showCenterText && (
+        <View style={[styles.centerText, { width: size, height: size }]}>
+          <Text style={styles.centerTextValue}>
+            {centerText || `${total.toLocaleString()}`}
+          </Text>
+          <Text style={styles.centerTextLabel}>총합</Text>
+        </View>
+      )} */}
     </View>
   );
 }
@@ -111,19 +176,26 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  chartContainer: {
     position: 'relative',
   },
   centerText: {
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
+    top: 0,
+    left: 0,
   },
   centerTextValue: {
-    fontSize: 12 * SCALE,
-    fontWeight: '600',
-    color: '#111827',
+    fontSize: 16 * SCALE,
+    fontWeight: '700',
+    color: '#1F2937',
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  centerTextLabel: {
+    fontSize: 10 * SCALE,
+    fontWeight: '500',
+    color: '#6B7280',
     textAlign: 'center',
   },
 }); 

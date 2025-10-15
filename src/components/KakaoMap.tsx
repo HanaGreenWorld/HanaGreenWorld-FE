@@ -239,11 +239,6 @@ export const KakaoMap: React.FC<KakaoMapProps> = ({
       </head>
       <body>
         <div id="map">
-          <div class="map-placeholder" id="mapPlaceholder">
-            <h3>🗺️ 카카오지도 로딩 중...</h3>
-            <p>위치: ${center.lat}, ${center.lon}</p>
-            <p>가맹점 수: ${merchants.length}개</p>
-          </div>
         </div>
         
         <script>
@@ -406,11 +401,6 @@ export const KakaoMap: React.FC<KakaoMapProps> = ({
       </head>
       <body>
         <div id="map">
-          <div class="map-placeholder" id="mapPlaceholder">
-            <h3>🗺️ 카카오지도 로딩 중...</h3>
-            <p>위치: ${center.lat}, ${center.lon}</p>
-            <p>가맹점 수: ${merchants.length}개</p>
-          </div>
         </div>
         <div class="map-controls">
           <div class="control-btn" onclick="zoomIn()">+</div>
@@ -907,7 +897,7 @@ export const KakaoMap: React.FC<KakaoMapProps> = ({
         onLoadEnd={handleLoadEnd}
         javaScriptEnabled={true}
         domStorageEnabled={true}
-        startInLoadingState={true}
+        startInLoadingState={false}
         scalesPageToFit={true}
         bounces={false}
         scrollEnabled={false}

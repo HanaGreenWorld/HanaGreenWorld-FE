@@ -1,5 +1,3 @@
-// Expo Camera 관련 코드를 시뮬레이터 호환성을 위해 임시로 주석 처리
-/*
 import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Image } from 'react-native';
 import { CameraView, Camera } from 'expo-camera';
@@ -244,88 +242,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});
-*/
-
-// 시뮬레이터 호환성을 위한 임시 컴포넌트
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-
-interface CameraCaptureProps {
-  onCapture: (_imageUri: string) => void;
-  onClose: () => void;
-  challengeTitle: string;
-}
-
-export default function CameraCapture({ onCapture, onClose, challengeTitle }: CameraCaptureProps) {
-  const handleMockCapture = () => {
-    // 시뮬레이터에서는 더미 이미지 URI 사용
-    const mockImageUri = 'https://via.placeholder.com/400x300/27ae60/ffffff?text=Challenge+Photo';
-    onCapture(mockImageUri);
-    onClose();
-  };
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{challengeTitle} 인증 (시뮬레이터 모드)</Text>
-      <Text style={styles.subtitle}>실제 기기에서만 카메라 기능을 사용할 수 있습니다.</Text>
-      
-      <TouchableOpacity style={styles.mockButton} onPress={handleMockCapture}>
-        <Text style={styles.mockButtonText}>더미 사진으로 인증하기</Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-        <Text style={styles.closeButtonText}>닫기</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#7f8c8d',
-    marginBottom: 30,
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  mockButton: {
-    backgroundColor: '#27ae60',
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    borderRadius: 25,
-    marginBottom: 20,
-  },
-  mockButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  closeButton: {
-    backgroundColor: '#95a5a6',
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    borderRadius: 25,
-  },
-  closeButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
