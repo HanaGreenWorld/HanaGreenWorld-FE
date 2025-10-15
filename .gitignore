@@ -254,4 +254,25 @@ buck-out/
 .buckversion
 .fakebuckversion
 
-# End of https://www.toptal.com/developers/gitignore/api/reactnative
+# End of https://www.toptal.com/developers/gitignore/api/reactnative# iOS
+ios/build/
+ios/Pods/
+ios/*.xcworkspace/xcuserdata/
+ios/*.xcodeproj/xcuserdata/
+ios/*.xcodeproj/project.xcworkspace/xcuserdata/
+ios/DerivedData/
+# Android
+android/build/
+android/.gradle/
+android/app/build/
+android/local.properties
+android/*.iml
+android/.idea/
+# React Native
+node_modules/
+.expo/
+dist/
+*.log
+ios/Podfile.lock
+ios/*.xcodeproj/project.pbxproj
+android/gradle.properties
