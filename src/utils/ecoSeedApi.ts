@@ -362,7 +362,19 @@ export const fetchDailyQuiz = async (): Promise<Quiz> => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const json = await response.json();
-    return json?.data as Quiz;
+    const quizData = json?.data as Quiz;
+    
+    // options가 문자열인 경우 JSON 파싱
+    if (quizData && typeof quizData.options === 'string') {
+      try {
+        quizData.options = JSON.parse(quizData.options);
+      } catch (error) {
+        console.error('Failed to parse quiz options:', error);
+        quizData.options = [];
+      }
+    }
+    
+    return quizData;
   } catch (error) {
     console.error('Failed to fetch daily quiz:', error);
     throw error;
@@ -423,7 +435,19 @@ export const fetchTodayQuizResult = async (): Promise<QuizRecord> => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const json = await response.json();
-    return json?.data as QuizRecord;
+    const quizRecord = json?.data as QuizRecord;
+    
+    // QuizRecord 안의 quiz.options가 문자열인 경우 JSON 파싱
+    if (quizRecord && quizRecord.quiz && typeof quizRecord.quiz.options === 'string') {
+      try {
+        quizRecord.quiz.options = JSON.parse(quizRecord.quiz.options);
+      } catch (error) {
+        console.error('Failed to parse quiz options in record:', error);
+        quizRecord.quiz.options = [];
+      }
+    }
+    
+    return quizRecord;
   } catch (error) {
     console.error('Failed to fetch today quiz result:', error);
     throw error;
@@ -451,7 +475,23 @@ export const fetchQuizHistory = async (): Promise<QuizRecord[]> => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const json = await response.json();
-    return json?.data as QuizRecord[];
+    const quizRecords = json?.data as QuizRecord[];
+    
+    // 각 QuizRecord의 quiz.options가 문자열인 경우 JSON 파싱
+    if (quizRecords && Array.isArray(quizRecords)) {
+      quizRecords.forEach(record => {
+        if (record && record.quiz && typeof record.quiz.options === 'string') {
+          try {
+            record.quiz.options = JSON.parse(record.quiz.options);
+          } catch (error) {
+            console.error('Failed to parse quiz options in history record:', error);
+            record.quiz.options = [];
+          }
+        }
+      });
+    }
+    
+    return quizRecords;
   } catch (error) {
     console.error('Failed to fetch quiz history:', error);
     throw error;

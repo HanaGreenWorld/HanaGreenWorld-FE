@@ -68,6 +68,32 @@ export const saveAuthToken = async (token: string): Promise<void> => {
 };
 
 /**
+ * 사용자 정보 저장 (로그인 시)
+ */
+export const saveUserInfo = async (userInfo: { memberId: number; email: string; name: string }): Promise<void> => {
+  try {
+    await AsyncStorage.setItem('userInfo', JSON.stringify(userInfo));
+    console.log('사용자 정보 저장 완료:', userInfo);
+  } catch (error) {
+    console.error('Failed to save user info:', error);
+    throw new Error('사용자 정보 저장에 실패했습니다.');
+  }
+};
+
+/**
+ * 사용자 정보 가져오기
+ */
+export const getUserInfo = async (): Promise<{ memberId: number; email: string; name: string } | null> => {
+  try {
+    const userInfo = await AsyncStorage.getItem('userInfo');
+    return userInfo ? JSON.parse(userInfo) : null;
+  } catch (error) {
+    console.error('Failed to get user info:', error);
+    return null;
+  }
+};
+
+/**
  * JWT 토큰 가져오기
  */
 export const getAuthToken = async (): Promise<string | null> => {

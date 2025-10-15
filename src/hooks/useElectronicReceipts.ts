@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getAuthToken } from '../utils/authUtils';
+import { API_BASE_URL } from '../utils/constants';
 
 export interface ElectronicReceiptRecord {
   recordId: number;
@@ -35,7 +36,7 @@ export function useElectronicReceipts() {
         throw new Error('로그인이 필요합니다.');
       }
 
-      const url = 'http://localhost:8080/api/electronic-receipts/all';
+      const url = `${API_BASE_URL}/api/electronic-receipts/all`;
       console.log('🌐 API 호출 시작:', url);
       
       const response = await fetch(url, {
@@ -83,7 +84,7 @@ export function useElectronicReceipts() {
         throw new Error('로그인이 필요합니다.');
       }
 
-      const url = 'http://localhost:8080/api/electronic-receipts/stats';
+      const url = `${API_BASE_URL}/api/electronic-receipts/stats`;
       console.log('🌐 통계 API 호출 시작:', url);
 
       const response = await fetch(url, {

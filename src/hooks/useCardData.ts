@@ -25,8 +25,6 @@ import {
 import { integrationApi } from '../services/integrationApi';
 
 export const useCardData = (userId: number) => {
-  // 디버깅 로그 추가
-  console.log('💳 useCardData 훅 시작:', { userId, timestamp: new Date().toISOString() });
   
   const [userCards, setUserCards] = useState<UserCardResponse[]>([]);
   const [transactions, setTransactions] = useState<CardTransactionResponse[]>([]);
@@ -39,27 +37,45 @@ export const useCardData = (userId: number) => {
   const [taggedTransactions, setTaggedTransactions] = useState<CardTransactionResponse[]>([]);
   const [benefitRecommendation, setBenefitRecommendation] = useState<any>(null);
   const [recommendationAnalysis, setRecommendationAnalysis] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // 초기 로딩 상태를 true로 설정
   const [error, setError] = useState<string | null>(null);
 
-  // 통합 카드 정보 조회 🎯
-  const getIntegratedCardInfo = useCallback(async () => {
+  // userId가 변경될 때 자동으로 데이터 로드
+  useEffect(() => {
+    if (userId > 0) {
+      setLoading(true); // 로딩 시작
+      getIntegratedCardInfo();
+    } else {
+      setLoading(false);
+      setUserCards([]); // 빈 배열로 초기화
+      setEcoBenefits(null); // 친환경 혜택도 초기화
+      setError(null); // 에러 초기화
+    }
+  }, [userId]); // getIntegratedCardInfo 의존성 제거
+
+  const getIntegratedCardInfo = useCallback(async (targetUserId?: number) => {
+    const currentUserId = targetUserId || userId;
     try {
-      setLoading(true);
       setError(null);
-      console.log('🎯 통합 카드 정보 조회 시작:', userId);
       
       // 통합 API를 통해 모든 카드 정보를 한 번에 조회
-      const integratedInfo = await fetchCardIntegratedInfo(userId);
+      const integratedInfo = await fetchCardIntegratedInfo(currentUserId);
       
-      // 카드 목록 정보 설정 - API 응답에서 실제 카드 데이터 사용
+      try {
+        const ecoBenefits = await fetchEcoBenefits(currentUserId);
+        setEcoBenefits(ecoBenefits);
+      } catch (ecoError) {
+        console.warn('친환경 가맹점 혜택 조회 실패:', ecoError);
+        setEcoBenefits(null);
+      }
+      
+      
       if (integratedInfo.cardList && Array.isArray(integratedInfo.cardList.cards) && integratedInfo.cardList.cards.length > 0) {
-        console.log('🎯 실제 카드 데이터 존재:', integratedInfo.cardList.cards);
         // CardDetail을 UserCardResponse로 변환
         const userCards = integratedInfo.cardList.cards.map((card, index) => ({
           id: index + 1,
-          userId: userId,
-          userName: `사용자${userId}`,
+          userId: currentUserId,
+          userName: `사용자${currentUserId}`,
           cardId: parseInt(card.cardNumber),
           cardName: card.cardName,
           cardType: card.cardType,
@@ -79,18 +95,15 @@ export const useCardData = (userId: number) => {
         }));
         setUserCards(userCards);
       } else {
-        console.log('🎯 카드 데이터 없음, 빈 카드 목록 설정');
         setUserCards([]);
       }
       
-      // 거래내역 설정 - 데이터가 있을 때만
       if (integratedInfo.transactions && Array.isArray(integratedInfo.transactions)) {
         setTransactions(integratedInfo.transactions);
       } else {
         setTransactions([]);
       }
       
-      // 소비현황 설정 - 데이터가 있을 때만
       if (integratedInfo.consumptionSummary) {
         setConsumptionSummary({
           totalAmount: integratedInfo.consumptionSummary.totalAmount || 0,
@@ -102,7 +115,6 @@ export const useCardData = (userId: number) => {
         setConsumptionSummary(null);
       }
       
-      // 친환경 혜택 정보 설정
       if (integratedInfo.ecoBenefits) {
         setEcoConsumptionAnalysis({
           totalAmount: integratedInfo.ecoBenefits.totalEcoAmount,
@@ -113,68 +125,19 @@ export const useCardData = (userId: number) => {
           categoryAmounts: {},
           ecoCategoryAmounts: integratedInfo.ecoBenefits.ecoCategories || {}
         });
+        
       }
       
-      console.log('🎯 통합 카드 정보 조회 성공:', integratedInfo);
       
     } catch (error) {
-      console.error('🎯 통합 카드 정보 조회 실패:', error);
+      console.error('통합 카드 정보 조회 실패:', error);
       setError('카드 정보를 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
     }
   }, [userId]);
 
-  // 사용자 카드 조회 (기존 방식)
-  const getUserCards = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      console.log('💳 카드 조회 시작:', userId);
-      
-      // 통합 API를 통해 카드 정보 조회
-      const cardList = await integrationApi.getCardList(userId);
-      console.log('💳 카드 목록 응답:', cardList);
-      
-      const cards = cardList.cards || [];
-      // CardInfo를 UserCardResponse로 변환
-      const userCards = cards.map((card, index) => ({
-        id: index + 1,
-        userId: userId,
-        userName: `사용자${userId}`,
-        cardId: parseInt(card.cardNumber),
-        cardName: card.cardName,
-        cardType: card.cardType,
-        cardStatus: card.cardStatus,
-        creditLimit: card.creditLimit,
-        availableLimit: card.availableLimit,
-        monthlyUsage: card.monthlyUsage,
-        issueDate: card.issueDate,
-        expiryDate: card.expiryDate,
-        cardNumber: card.cardNumber,
-        cardNumberMasked: card.cardNumber.replace(/(\d{4})(\d{4})(\d{4})(\d{4})/, '$1-****-****-$4'),
-        cardImageUrl: '', // 카드 이미지 URL (기본값)
-        currentBenefitType: '기본',
-        isActive: card.cardStatus === '활성',
-        createdAt: card.issueDate,
-        updatedAt: new Date().toISOString()
-      }));
-      
-      setUserCards(userCards);
-      console.log('✅ 카드 조회 성공:', userCards);
-      return userCards;
-    } catch (err) {
-      console.error('❌ 카드 정보 조회 실패:', err);
-      
-      // API 실패 시 빈 배열 반환 (하드코딩된 데이터 제거)
-      setUserCards([]);
-      setError('카드 정보를 불러올 수 없습니다');
-      console.log('❌ 카드 데이터 없음');
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  }, [userId]);
+  // getUserCards 함수 제거됨 - getIntegratedCardInfo로 통합
 
   // 카드 거래내역 조회
   const getCardTransactions = useCallback(async () => {
@@ -219,7 +182,6 @@ export const useCardData = (userId: number) => {
     try {
       // cardId가 유효하지 않으면 빈 배열 반환
       if (!cardId || cardId === undefined || cardId === null) {
-        console.log('💳 cardId가 유효하지 않음:', cardId);
         setCardBenefits([]);
         return [];
       }
@@ -243,13 +205,11 @@ export const useCardData = (userId: number) => {
   // 모든 데이터 새로고침 (함수들이 모두 선언된 후에 정의)
   const refreshAllData = useCallback(async () => {
     try {
-      const cards = await getUserCards();
-      // 다른 함수들은 필요에 따라 호출
-      console.log('💳 모든 데이터 새로고침 완료');
+      await getIntegratedCardInfo();
     } catch (err) {
       console.error('데이터 새로고침 실패:', err);
     }
-  }, [getUserCards]);
+  }, [getIntegratedCardInfo]);
 
   // 카드 혜택 변경
   const updateCardBenefit = useCallback(async (cardNumber: string, benefitType: string) => {
@@ -278,7 +238,6 @@ export const useCardData = (userId: number) => {
 
   // 사용자 카드 혜택 조회 (완전히 비활성화)
   const getUserCardBenefits = useCallback(async () => {
-    console.log('💳 카드 혜택 조회 비활성화됨 - 빈 배열 반환');
     setCardBenefits([]);
     return [];
   }, [userId]);
@@ -397,33 +356,27 @@ export const useCardData = (userId: number) => {
 
   // AI 기반 혜택 추천 (일시적으로 비활성화)
   const getBenefitRecommendation = useCallback(async () => {
-    console.log('🚫 AI 혜택 추천 기능이 비활성화되었습니다.');
     setBenefitRecommendation(null);
     return null;
   }, [userId]);
 
   // 혜택 추천 상세 분석 (일시적으로 비활성화)
   const getRecommendationAnalysis = useCallback(async (packageCode?: string) => {
-    console.log('🚫 AI 혜택 추천 분석 기능이 비활성화되었습니다.');
     setRecommendationAnalysis(null);
     return null;
   }, [userId]);
 
   // 혜택 패키지 비교 (일시적으로 비활성화)
   const compareBenefitPackagesData = useCallback(async (packageCodes: string[]) => {
-    console.log('🚫 AI 혜택 패키지 비교 기능이 비활성화되었습니다.');
     return null;
   }, [userId]);
 
   // 컴포넌트 마운트 시 자동으로 카드 데이터 로드 (userId가 0이 아닐 때만)
   useEffect(() => {
     if (userId && userId > 0) {
-      console.log('🎯 통합 카드 데이터 로드 시작:', userId);
       getIntegratedCardInfo();
     } else if (userId === 0) {
-      console.log('💳 useCardData: userId가 0이므로 데이터 로드 건너뜀');
     } else {
-      console.log('💳 useCardData: userId가 유효하지 않음:', userId);
     }
   }, [userId, getIntegratedCardInfo]);
 
@@ -441,7 +394,6 @@ export const useCardData = (userId: number) => {
     recommendationAnalysis,
     loading,
     error,
-    getUserCards,
     getCardTransactions,
     getMonthlyConsumptionSummary,
     getCardBenefits,

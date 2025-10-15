@@ -231,13 +231,10 @@ export const isKakaoMapApiKeyValid = (): boolean => {
 
 // API 설정 - 플랫폼별 최적화
 export const API_BASE_URL = (() => {
-  // 서버 IP 주소 (현재: 7.7.7.39)
-  const SERVER_IP = '172.30.112.228';
-  
   if (Platform.OS === 'android') {
-    // 안드로이드 에뮬레이터는 실제 IP 주소를 사용
+    // 안드로이드 에뮬레이터는 10.0.2.2를 사용 (호스트 머신의 localhost)
     // 하나그린세상 서버 (로그인, 챌린지 등)
-    return `http://${SERVER_IP}:8080`;
+    return 'http://10.0.2.2:8080';
   }
   
   if (Platform.OS === 'ios') {
@@ -274,4 +271,24 @@ export const getCardImageSource = (imageUrl?: string | null) => {
   };
 
   return imageMap[imageUrl] || require('../../assets/hana_greenlife_card.png');
+};
+
+// 친환경 가맹점 아이콘 매핑 함수
+export const getEcoMerchantIconSource = (iconName?: string | null) => {
+  if (!iconName) {
+    return require('../../assets/hana3dIcon/hanaIcon3d_85.png'); // 기본 친환경 아이콘
+  }
+
+  // 친환경 가맹점 아이콘 매핑 (hana3dIcon 폴더의 아이콘 사용)
+  const ecoIconMap: { [key: string]: any } = {
+    'eco-store.png': require('../../assets/hana3dIcon/hanaIcon3d_85.png'), // 친환경 매장
+    'ev-charging.png': require('../../assets/hana3dIcon/charging_station.png'), // 전기차 충전
+    'zero-waste.png': require('../../assets/hana3dIcon/zero_waste.png'), // 제로웨이스트
+    'green-beauty.png': require('../../assets/hana3dIcon/hanaIcon3d_103.png'), // 친환경 뷰티
+    'eco-shopping.png': require('../../assets/hana3dIcon/hanaIcon3d_107.png'), // 친환경 쇼핑
+    'organic-cafe.png': require('../../assets/hana3dIcon/hanaIcon3d_4_89.png'), // 유기농 카페
+    'eco-default.png': require('../../assets/hana3dIcon/hanaIcon3d_85.png'), // 기본 친환경 아이콘
+  };
+
+  return ecoIconMap[iconName] || require('../../assets/hana3dIcon/hanaIcon3d_85.png');
 };

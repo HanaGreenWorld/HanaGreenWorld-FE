@@ -9,7 +9,9 @@ export interface TeamResponse {
   completedChallenges: number;
   rank: number;
   members: number;
+  maxMembers?: number; // 팀 최대 인원
   owner: string;
+  isLeader?: boolean; // 현재 사용자가 팀장인지 여부
   createdAt: string;
   inviteCode: string;
   currentChallenge: string;
@@ -34,6 +36,7 @@ export interface TeamStatsResponse {
   monthlyRank: number;
   totalRank: number;
   carbonSavedKg: number;
+  monthlyCarbonSaved: number;
   activeMembers: number;
   completedChallengesThisMonth: number;
 }
@@ -72,6 +75,7 @@ export interface TopTeamResponse {
   slogan: string;
   rank: number;
   totalPoints: number;
+  monthlyPoints: number;
   members: number;
   leaderName: string;
   emblemUrl: string;
@@ -110,7 +114,7 @@ export interface TeamMembersResponse {
 }
 
 export interface TeamMemberResponse {
-  memberId: number;
+  id: number; // 백엔드에서 'id' 필드로 반환됨
   name: string;
   email: string;
   role: 'LEADER' | 'MEMBER';
@@ -229,22 +233,6 @@ export const teamApi = {
     return response.json();
   },
 
-
-  // 팀 탈퇴 (특정 팀에서 탈퇴)
-  async leaveTeamById(teamId: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/teams/${teamId}/leave`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${await getAuthToken()}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`팀 탈퇴 실패: ${response.status}`);
-    }
-  },
-
   // 팀 초대 코드 생성
   async generateInviteCode(teamId: number): Promise<TeamInviteCodeResponse> {
     const response = await fetch(`${API_BASE_URL}/teams/${teamId}/invite-code`, {
@@ -313,7 +301,7 @@ export const teamApi = {
       console.error('팀 가입 신청 실패:', error);
       // "이미 가입 신청을 했습니다" 메시지는 에러가 아닌 정보로 처리
       if (error.message && error.message.includes('이미 가입 신청을 했습니다')) {
-        throw new Error('이미 가입 신청을 보낸 팀입니다.\n승인을 기다려주세요! 😊');
+        throw new Error('이미 가입 신청을 보낸 팀입니다.\n승인을 기다려주세요!');
       }
       throw error;
     }
@@ -720,7 +708,7 @@ export const teamApi = {
       console.log('팀 정보 데이터:', data);
       
       // 팀장인지 확인 (현재 사용자가 팀장인지)
-      const isLeader = data.data?.isLeader || false;
+      const isLeader = data.isLeader || false;
       console.log('팀장 권한 확인 결과:', isLeader);
       
       return isLeader;
