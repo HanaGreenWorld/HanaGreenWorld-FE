@@ -229,26 +229,33 @@ export const isKakaoMapApiKeyValid = (): boolean => {
          apiKey.length > 10);
 };
 
-// API 설정 - 플랫폼별 최적화
+// API 설정 - 환경변수 우선, fallback으로 배포된 서버 사용
 export const API_BASE_URL = (() => {
-  if (Platform.OS === 'android') {
-    // 안드로이드 에뮬레이터는 10.0.2.2를 사용 (호스트 머신의 localhost)
-    // 하나그린세상 서버 (로그인, 챌린지 등)
-    return 'http://10.0.2.2:8080';
+  // 1순위: 환경변수에서 API URL 가져오기
+  const envApiUrl = process.env.API_BASE_URL;
+  if (envApiUrl && envApiUrl !== 'undefined') {
+    return envApiUrl;
   }
-  
-  if (Platform.OS === 'ios') {
-    // iOS 에뮬레이터는 localhost 사용
+
+  // 2순위: 개발 환경에서 플랫폼별 로컬 서버
+  if (__DEV__) {
+    if (Platform.OS === 'android') {
+      // 안드로이드 에뮬레이터는 10.0.2.2를 사용
+      return 'http://10.0.2.2:8080';
+    }
+    
+    if (Platform.OS === 'ios') {
+      // iOS 시뮬레이터는 localhost 사용
+      return 'http://localhost:8080';
+    }
+    
+    // 웹 개발 환경
     return 'http://localhost:8080';
   }
-  
-  // 웹 환경
-  return 'http://localhost:8080';
-})();
 
-// 하나카드 서버는 백엔드에서만 접근
-// 프론트엔드는 하나그린세상 서버(API_BASE_URL)를 통해서만 데이터 접근
-// CARD_API_BASE_URL 제거 - 잘못된 아키텍처
+  // 3순위: 프로덕션 환경 - 배포된 서버 사용
+  return 'https://hanagreenworld-be-407010418580.asia-northeast3.run.app';
+})();
 
 // 개발 중 확인용 로그
 if (__DEV__) {
