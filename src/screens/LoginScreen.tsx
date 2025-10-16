@@ -39,6 +39,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   };
 
   const handleLogin = async () => {
+    console.log('🔘 로그인 버튼 클릭됨!');
+    console.log('📱 플랫폼:', Platform.OS);
+    console.log('📝 입력된 아이디:', memberId);
+    console.log('🔒 비밀번호 길이:', password.length);
+    
     if (!memberId.trim() || !password.trim()) {
       Alert.alert('오류', '아이디와 비밀번호를 입력해주세요.');
       return;
@@ -217,16 +222,28 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             {/* 도움말 링크들 */}
             <View style={styles.helpLinksContainer}>
               <View style={styles.helpLinksRow}>
-                <TouchableOpacity style={styles.helpLink}>
+                <TouchableOpacity 
+                  style={styles.helpLink}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
                   <Text style={styles.helpLinkText}>아이디 찾기</Text>
                 </TouchableOpacity>
                 <Text style={styles.helpLinkSeparator}>|</Text>
-                <TouchableOpacity style={styles.helpLink}>
+                <TouchableOpacity 
+                  style={styles.helpLink}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
                   <Text style={styles.helpLinkText}>회원가입</Text>
                 </TouchableOpacity>
               </View>
               
-              <TouchableOpacity style={styles.usageGuideLink}>
+              <TouchableOpacity 
+                style={styles.usageGuideLink}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
                 <Text style={styles.usageGuideText}>아이디 로그인 이용 안내</Text>
                 <View style={styles.questionMark}>
                   <Text style={styles.questionMarkText}>?</Text>
@@ -239,6 +256,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
               onPress={handleLogin}
               disabled={isLoading}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Text style={styles.loginButtonText}>
                 {isLoading ? '로그인 중...' : '로그인'}
@@ -246,7 +265,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             </TouchableOpacity>
 
             {/* 다른 로그인 방법 */}
-            <TouchableOpacity style={styles.otherLoginMethods}>
+            <TouchableOpacity 
+              style={styles.otherLoginMethods}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
               <Text style={styles.otherLoginText}>다른 로그인방법</Text>
               <Text style={styles.chevronIcon}>⌄</Text>
             </TouchableOpacity>
@@ -359,8 +382,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   helpLink: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    minHeight: 44, // 최소 터치 영역 보장
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   helpLinkText: {
     fontSize: 14,
@@ -400,6 +426,8 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     marginBottom: 10,
+    minHeight: 56, // 최소 높이 보장
+    justifyContent: 'center', // 세로 중앙 정렬
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -421,7 +449,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 16,
+    minHeight: 48, // 최소 터치 영역 보장
   },
   otherLoginText: {
     fontSize: 14,
