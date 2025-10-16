@@ -182,7 +182,7 @@ export function MyScreen({
         storeName: '그린마트 강남점',
         type: 'ECO_FOOD',
         amount: '+2,500원',
-        date: '7월 15일',
+        date: '9월 15일',
         cardNumber: '3524',
         icon: getCategoryIcon('ECO_FOOD')
       },

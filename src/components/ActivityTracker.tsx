@@ -84,7 +84,7 @@ export function ActivityTracker({ onPointsEarned, userStats }: ActivityTrackerPr
         return {
           title: '친환경 전문가',
           description: '친환경 활동의 전문가 단계입니다. 다른 사람들에게 좋은 영향을 주고 있어요!',
-          requirements: '9,999+ 원큐씨앗',
+          requirements: '10,000+ 원큐씨앗',
           financialBenefits: {
             savingsRate: '2.0%',
             loanRate: '2.0%',

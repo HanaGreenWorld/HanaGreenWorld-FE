@@ -164,7 +164,7 @@ export default function SeedHistoryScreen({ onBack }: SeedHistoryScreenProps) {
                     <View style={styles.seedInfo}>
                       <Text style={styles.seedTitle}>{record.challenge.title}</Text>
                       <Text style={styles.seedSubtitle}>
-                        {record.verificationStatus === 'APPROVED' ? '챌린지 완료' :
+                        {record.verificationStatus === 'APPROVED' ? '챌린지 성공' :
                          record.verificationStatus === 'REJECTED' ? '챌린지 실패' :
                          record.verificationStatus === 'NEEDS_REVIEW' ? '검토 대기' :
                          record.verificationStatus === 'PENDING' ? '검증 중' :
@@ -230,10 +230,10 @@ export default function SeedHistoryScreen({ onBack }: SeedHistoryScreenProps) {
                       selectedRecord.verificationStatus === 'REJECTED' ? styles.statusError :
                       styles.statusWarning
                     ]}>
-                      {selectedRecord.verificationStatus === 'APPROVED' ? '✅ 챌린지 완료' :
-                       selectedRecord.verificationStatus === 'REJECTED' ? '❌ 챌린지 실패' :
-                       selectedRecord.verificationStatus === 'NEEDS_REVIEW' ? '🟡 검토 대기' :
-                       selectedRecord.verificationStatus === 'PENDING' ? '⏳ 검증 중' :
+                      {selectedRecord.verificationStatus === 'APPROVED' ? '챌린지 성공' :
+                       selectedRecord.verificationStatus === 'REJECTED' ? '챌린지 실패' :
+                       selectedRecord.verificationStatus === 'NEEDS_REVIEW' ? '검토 대기' :
+                       selectedRecord.verificationStatus === 'PENDING' ? '검증 중' :
                        '참여완료'}
                     </Text>
                   </View>

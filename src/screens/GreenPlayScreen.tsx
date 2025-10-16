@@ -106,7 +106,7 @@ export const GreenPlayScreen: React.FC<GreenPlayScreenProps> = ({ onBack, onEnte
         <View style={styles.announcementBanner}>
           <View style={styles.announcementContent}>
             <Ionicons name="leaf-outline" size={16 * SCALE} color="#000" style={styles.announcementIcon} />
-            <Text style={styles.announcementText}>7월 그린HANA 환경보호 결과 발표!</Text>
+            <Text style={styles.announcementText}>9월 하나그린세상 환경보호 결과 발표!</Text>
           </View>
           <Ionicons name="chevron-forward" size={16 * SCALE} color="#000" />
         </View>

@@ -704,7 +704,7 @@ export default function EcoChallengeScreen({ onBack, onShowHistory, onShowSeedHi
         }
       }
       
-      console.log('🔍 AI 검증 시작 전 상태 확인:', {
+      console.log('AI 검증 시작 전 상태 확인:', {
         challengeId,
         imageUrl: !!imageUrl,
         isTeamChallenge: selected.isTeamChallenge,
@@ -714,7 +714,7 @@ export default function EcoChallengeScreen({ onBack, onShowHistory, onShowSeedHi
       
       setVerifyingChallenges(prev => ({ ...prev, [challengeIdStr]: true }));
       
-      console.log('🚀 AI 검증 API 호출 시작:', {
+      console.log('AI 검증 API 호출 시작:', {
         challengeId,
         challengeTitle: selected.title,
         isTeamChallenge: selected.isTeamChallenge,
@@ -725,7 +725,7 @@ export default function EcoChallengeScreen({ onBack, onShowHistory, onShowSeedHi
       const verificationResult = await challengeApi.startAiVerification(challengeId);
       
       if (verificationResult) {
-        console.log('🔍 AI 검증 시작됨:', verificationResult);
+        console.log('AI 검증 시작됨:', verificationResult);
         
         // AI 검증 완료까지 폴링 (안드로이드 최적화)
         const pollForResult = async () => {
@@ -736,12 +736,12 @@ export default function EcoChallengeScreen({ onBack, onShowHistory, onShowSeedHi
           const poll = async () => {
             try {
               attempts++;
-              console.log(`🔄 AI 검증 상태 확인 중... (${attempts}/${maxAttempts}) [${Platform.OS}]`);
+              console.log(`AI 검증 상태 확인 중... (${attempts}/${maxAttempts}) [${Platform.OS}]`);
               
               const participations = await challengeApi.getMyChallengeParticipations();
               const latestParticipation = participations.find(p => p.challenge.id === challengeId);
               
-              console.log('📋 현재 참여 상태:', {
+              console.log('현재 참여 상태:', {
                 challengeId,
                 found: !!latestParticipation,
                 status: latestParticipation?.verificationStatus,
@@ -753,7 +753,7 @@ export default function EcoChallengeScreen({ onBack, onShowHistory, onShowSeedHi
                    latestParticipation.verificationStatus === 'REJECTED' ||
                    latestParticipation.verificationStatus === 'NEEDS_REVIEW')) {
                 
-                console.log('📊 AI 검증 완료!', {
+                console.log('AI 검증 완료!', {
                   status: latestParticipation.verificationStatus,
                   confidence: latestParticipation.aiConfidence,
                   explanation: latestParticipation.aiExplanation,
@@ -820,10 +820,10 @@ export default function EcoChallengeScreen({ onBack, onShowHistory, onShowSeedHi
               
               // 아직 검증이 완료되지 않았고 최대 시도 횟수에 도달하지 않았다면 계속 폴링
               if (attempts < maxAttempts) {
-                console.log(`⏳ ${pollInterval/1000}초 후 다시 확인...`);
+                console.log(`${pollInterval/1000}초 후 다시 확인...`);
                 setTimeout(poll, pollInterval);
               } else {
-                console.log('⏰ AI 검증 타임아웃');
+                console.log('AI 검증 타임아웃');
                 Alert.alert(
                   '검증 대기', 
                   `AI 검증이 시간이 오래 걸리고 있습니다.\n\n${Platform.OS === 'android' ? '안드로이드에서는 검증이 더 오래 걸릴 수 있습니다.' : ''}\n잠시 후 다시 확인해주세요.`, 
@@ -833,10 +833,10 @@ export default function EcoChallengeScreen({ onBack, onShowHistory, onShowSeedHi
             } catch (error) {
               console.error('AI 검증 상태 확인 실패:', error);
               if (attempts < maxAttempts) {
-                console.log(`🔄 에러 발생, ${pollInterval/1000}초 후 재시도...`);
+                console.log(`에러 발생, ${pollInterval/1000}초 후 재시도...`);
                 setTimeout(poll, pollInterval);
               } else {
-                console.log('⏰ 최대 재시도 횟수 초과');
+                console.log('최대 재시도 횟수 초과');
                 Alert.alert('검증 실패', 'AI 검증 상태를 확인할 수 없습니다. 네트워크 연결을 확인하고 다시 시도해주세요.', [{ text: '확인' }]);
               }
             }
@@ -1246,22 +1246,22 @@ export default function EcoChallengeScreen({ onBack, onShowHistory, onShowSeedHi
                               style={styles.completedImage}
                               resizeMode="contain"
                               onError={(error) => {
-                                console.error('❌ 이미지 로드 실패:', error.nativeEvent.error);
-                                console.error('❌ 이미지 URL:', fixedImageUrl);
-                                console.error('❌ 에러 상세:', error.nativeEvent);
+                                console.error('이미지 로드 실패:', error.nativeEvent.error);
+                                console.error('이미지 URL:', fixedImageUrl);
+                                console.error('에러 상세:', error.nativeEvent);
                                 // 연결 테스트 실행
                                 testImageUrl(fixedImageUrl);
                               }}
                               onLoad={() => {
-                                console.log('✅ 이미지 로드 성공:', fixedImageUrl);
+                                console.log('이미지 로드 성공:', fixedImageUrl);
                               }}
                               onLoadStart={() => {
-                                console.log('🔄 이미지 로드 시작:', fixedImageUrl);
+                                console.log('이미지 로드 시작:', fixedImageUrl);
                                 // 이미지 로드 시작 시 연결 테스트
                                 testImageUrl(fixedImageUrl);
                               }}
                               onLoadEnd={() => {
-                                console.log('🏁 이미지 로드 완료:', fixedImageUrl);
+                                console.log('이미지 로드 완료:', fixedImageUrl);
                               }}
                             />
                           );
@@ -1283,13 +1283,7 @@ export default function EcoChallengeScreen({ onBack, onShowHistory, onShowSeedHi
                         );
                       }
                     })()}
-                    
-                    {/* {completed[selected.id] && (
-                      <View style={styles.completedImageOverlay}>
-                        <Ionicons name="checkmark-circle" size={32} color="#10B981" />
-                        <Text style={styles.completedImageText}>인증 완료</Text>
-                      </View>
-                    )} */}
+                   
                     
                   </View>
                 )}

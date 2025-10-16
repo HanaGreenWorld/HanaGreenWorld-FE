@@ -77,15 +77,15 @@ export function useElectronicReceipts() {
 
   const fetchStats = async () => {
     try {
-      console.log('📊 전자확인증 통계 조회 시작');
+      console.log('전자확인증 통계 조회 시작');
       const token = await getAuthToken();
-      console.log('🔑 통계용 토큰 확인:', token ? '토큰 존재' : '토큰 없음');
+      console.log('통계용 토큰 확인:', token ? '토큰 존재' : '토큰 없음');
       if (!token) {
         throw new Error('로그인이 필요합니다.');
       }
 
       const url = `${API_BASE_URL}/api/electronic-receipts/stats`;
-      console.log('🌐 통계 API 호출 시작:', url);
+      console.log('통계 API 호출 시작:', url);
 
       const response = await fetch(url, {
         method: 'GET',
@@ -95,31 +95,30 @@ export function useElectronicReceipts() {
         },
       });
 
-      console.log('📡 통계 응답 상태:', response.status);
+      console.log('통계 응답 상태:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.log('❌ 통계 응답 에러 내용:', errorText);
+        console.log('통계 응답 에러 내용:', errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('📊 통계 응답 데이터:', data);
+      console.log('통계 응답 데이터:', data);
       
       if (data.success) {
-        console.log('✅ 통계 조회 성공:', data.data);
+        console.log('통계 조회 성공:', data.data);
         setStats(data.data);
       } else {
-        console.log('❌ 통계 API 응답 실패:', data.message);
+        console.log('통계 API 응답 실패:', data.message);
         throw new Error(data.message || '전자확인증 통계를 가져오는데 실패했습니다.');
       }
     } catch (err) {
-      console.error('❌ 전자확인증 통계 조회 실패:', err);
+      console.error('전자확인증 통계 조회 실패:', err);
     }
   };
 
   useEffect(() => {
-    console.log('🚀 useElectronicReceipts useEffect 실행');
     fetchElectronicReceipts();
     fetchStats();
   }, []);
