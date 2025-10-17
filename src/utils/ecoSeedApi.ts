@@ -215,6 +215,7 @@ export const fetchMemberProfile = async (): Promise<{
   currentPoints: number;
   totalPoints: number;
   currentMonthPoints: number;
+  monthlyPoints: number;
   hanaMoney: number;
 }> => {
   try {

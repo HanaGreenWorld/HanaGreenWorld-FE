@@ -1,6 +1,7 @@
 export interface EcoSeedResponse {
   totalSeeds: number;        // 총 적립된 원큐씨앗
   currentSeeds: number;      // 현재 사용 가능한 원큐씨앗
+  monthlySeeds: number;      // 이번달 적립된 원큐씨앗
   usedSeeds: number;         // 사용된 원큐씨앗
   convertedSeeds: number;    // 하나머니로 전환된 원큐씨앗
   message: string;           // 응답 메시지

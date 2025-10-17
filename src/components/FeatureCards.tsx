@@ -22,10 +22,14 @@ export function FeatureCards() {
   // 원큐씨앗 데이터를 API에서 가져온 데이터로 업데이트
   const financialData = {
     month: {
-      // 월간 원큐씨앗은 현재 사용 가능한 원큐씨앗으로 표시 (실제로는 월간 데이터가 없음)
-      value: ecoSeedInfo?.currentSeeds ? `${ecoSeedInfo.currentSeeds.toLocaleString()}개` : '75개',
-      percentage: userStats?.averageComparison ? `상위 ${userStats.averageComparison.toFixed(1)}% 사용자` : '상위 30% 사용자',
-      trend: '+12%',
+      // 이번달 적립된 원큐씨앗 표시
+      value: ecoSeedInfo?.monthlySeeds ? `${ecoSeedInfo.monthlySeeds.toLocaleString()}개` : '0개',
+      percentage: userStats?.monthlyPointsComparison 
+        ? `상위 ${userStats.monthlyPointsComparison.toFixed(1)}% 사용자` 
+        : '상위 30% 사용자',
+      trend: userStats?.ecoSeedsGrowthRate !== null && userStats?.ecoSeedsGrowthRate !== undefined
+        ? `${userStats.ecoSeedsGrowthRate >= 0 ? '+' : ''}${userStats.ecoSeedsGrowthRate.toFixed(1)}%`
+        : '-',
       image: require('../../assets/sprout.png'),
       color: '#10B981',
       bgGradient: ['#ECFDF5', '#F0FDF4'],
@@ -33,7 +37,9 @@ export function FeatureCards() {
     },
     total: {
       value: ecoSeedInfo?.totalSeeds ? `${ecoSeedInfo.totalSeeds.toLocaleString()}개` : '5,100개',
-      percentage: userStats?.averageComparison ? `상위 ${userStats.averageComparison.toFixed(1)}% 사용자` : '상위 30% 사용자',
+      percentage: userStats?.totalPointsComparison 
+        ? `상위 ${userStats.totalPointsComparison.toFixed(1)}% 사용자` 
+        : '상위 30% 사용자',
       trend: userStats?.practiceDays ? `${userStats.practiceDays}일째` : '128일째',
       image: require('../../assets/sprout.png'),
       color: '#10B981',
@@ -57,8 +63,12 @@ export function FeatureCards() {
       value: currentImpact?.monthlyCarbonSaved !== undefined && currentImpact.monthlyCarbonSaved >= 0 
         ? `${currentImpact.monthlyCarbonSaved.toFixed(1)}kg` 
         : currentImpact?.monthlyCarbonSaved === -1 ? '-' : '2.3kg',
-      percentage: userStats?.averageComparison ? `상위 ${userStats.averageComparison.toFixed(1)}% 사용자` : '상위 30% 사용자',
-      trend: userStats?.monthlyGrowthRate !== undefined ? `${userStats.monthlyGrowthRate >= 0 ? '+' : ''}${userStats.monthlyGrowthRate.toFixed(1)}%` : '+8%',
+      percentage: userStats?.monthlyCarbonComparison 
+        ? `상위 ${userStats.monthlyCarbonComparison.toFixed(1)}% 사용자` 
+        : '상위 30% 사용자',
+      trend: userStats?.monthlyGrowthRate !== null && userStats?.monthlyGrowthRate !== undefined
+        ? `${userStats.monthlyGrowthRate >= 0 ? '+' : ''}${userStats.monthlyGrowthRate.toFixed(1)}%`
+        : '-',
       image: require('../../assets/hana3dIcon/hanaIcon3d_4_17.png'),
       color: '#3B82F6',
       bgGradient: ['#EFF6FF', '#F0F9FF'],
@@ -66,7 +76,9 @@ export function FeatureCards() {
     },
     total: {
       value: currentImpact?.totalCarbonSaved ? `${currentImpact.totalCarbonSaved.toFixed(1)}kg` : '8.7kg',
-      percentage: userStats?.averageComparison ? `상위 ${userStats.averageComparison.toFixed(1)}% 사용자` : '상위 30% 사용자',
+      percentage: userStats?.totalCarbonComparison 
+        ? `상위 ${userStats.totalCarbonComparison.toFixed(1)}% 사용자` 
+        : '상위 30% 사용자',
       trend: userStats?.practiceDays ? `${userStats.practiceDays}일째` : '128일째',
       image: require('../../assets/hana3dIcon/hanaIcon3d_4_17.png'),
       color: '#3B82F6',

@@ -315,7 +315,7 @@ export default function TeamJoinScreen({ onBack, onJoinSuccess }: TeamJoinScreen
             <Ionicons name="document-text-outline" size={80} color="#9CA3AF" />
             <Text style={styles.emptyTitle}>가입 신청 내역이 없어요</Text>
             <Text style={styles.emptySubtitle}>
-              팀에 가입 신청을 하면 여기에서 확인할 수 있어요! 🌟
+              팀에 가입 신청을 하면 여기에서 확인할 수 있어요!
             </Text>
           </View>
         ) : (

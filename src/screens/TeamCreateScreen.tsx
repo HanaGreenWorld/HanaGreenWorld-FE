@@ -174,23 +174,6 @@ export default function TeamCreateScreen({ onBack, onCreateSuccess }: TeamCreate
                 </>
               )}
             </TouchableOpacity>
-
-            {/* Tips */}
-            <View style={styles.tipsContainer}>
-              <Text style={styles.tipsTitle}>💡 팀 만들기 팁</Text>
-              <View style={styles.tipItem}>
-                <Text style={styles.tipIcon}>🎯</Text>
-                <Text style={styles.tipText}>멋진 팀 이름으로 팀원들의 관심을 끌어보세요</Text>
-              </View>
-              <View style={styles.tipItem}>
-                <Text style={styles.tipIcon}>📝</Text>
-                <Text style={styles.tipText}>팀 설명으로 팀의 목표나 특징을 소개해보세요</Text>
-              </View>
-              <View style={styles.tipItem}>
-                <Text style={styles.tipIcon}>👥</Text>
-                <Text style={styles.tipText}>적절한 팀원 수를 설정하여 활발한 활동을 유지하세요</Text>
-              </View>
-            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

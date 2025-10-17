@@ -277,46 +277,46 @@ export const KakaoMap: React.FC<KakaoMapProps> = ({
                   
                   // 가맹점 데이터
                   var merchantsData = ${JSON.stringify(merchants.map((merchant, index) => ({
-                    id: merchant.id || index,
-                    lat: merchant.latitude,
-                    lng: merchant.longitude,
-                    title: merchant.name,
-                    category: merchant.category,
-                    distance: merchant.distance,
+      id: merchant.id || index,
+      lat: merchant.latitude,
+      lng: merchant.longitude,
+      title: merchant.name,
+      category: merchant.category,
+      distance: merchant.distance,
                   })))};
                   
-                  sendLog('가맹점 데이터: ' + merchantsData.length + '개');
-                  
-                  // 가맹점 마커들 생성
-                  merchantsData.forEach(function(merchant, index) {
-                    var marker = new kakao.maps.Marker({
-                      position: new kakao.maps.LatLng(merchant.lat, merchant.lng),
-                      map: map,
-                      title: merchant.title
-                    });
-                    
-                    // 인포윈도우
-                    var infowindow = new kakao.maps.InfoWindow({
-                      content: '<div style="padding:10px;min-width:200px;">' +
-                               '<h3 style="margin:0 0 5px 0;font-size:14px;">' + merchant.title + '</h3>' +
-                               '<p style="margin:0;font-size:12px;color:#666;">' + merchant.category + '</p>' +
-                               '<p style="margin:5px 0 0 0;font-size:12px;color:#4CAF50;">' + 
-                               (merchant.distance ? merchant.distance.toFixed(3) + 'km' : '거리 계산 중') + '</p>' +
-                               '</div>'
-                    });
-                    
-                    // 마커 클릭 이벤트
-                    kakao.maps.event.addListener(marker, 'click', function() {
-                      infowindow.open(map, marker);
-                      if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-                        window.ReactNativeWebView.postMessage(JSON.stringify({
-                          type: 'markerClick',
-                          merchant: merchant
-                        }));
-                      }
-                    });
-                  });
-                  
+              sendLog('가맹점 데이터: ' + merchantsData.length + '개');
+              
+              // 가맹점 마커들 생성
+              merchantsData.forEach(function(merchant, index) {
+                var marker = new kakao.maps.Marker({
+                  position: new kakao.maps.LatLng(merchant.lat, merchant.lng),
+                  map: map,
+                  title: merchant.title
+                });
+                
+                // 인포윈도우
+                var infowindow = new kakao.maps.InfoWindow({
+                  content: '<div style="padding:10px;min-width:200px;">' +
+                           '<h3 style="margin:0 0 5px 0;font-size:14px;">' + merchant.title + '</h3>' +
+                           '<p style="margin:0;font-size:12px;color:#666;">' + merchant.category + '</p>' +
+                           '<p style="margin:5px 0 0 0;font-size:12px;color:#4CAF50;">' + 
+                           (merchant.distance ? merchant.distance.toFixed(3) + 'km' : '거리 계산 중') + '</p>' +
+                           '</div>'
+                });
+                
+                // 마커 클릭 이벤트
+                kakao.maps.event.addListener(marker, 'click', function() {
+                  infowindow.open(map, marker);
+                  if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+                    window.ReactNativeWebView.postMessage(JSON.stringify({
+                      type: 'markerClick',
+                      merchant: merchant
+                    }));
+                  }
+                });
+              });
+              
                   // 플레이스홀더 숨기기
                   var placeholder = document.getElementById('mapPlaceholder');
                   if (placeholder) {
@@ -336,7 +336,7 @@ export const KakaoMap: React.FC<KakaoMapProps> = ({
           // 페이지 로드 완료 후 초기화
           if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initMap);
-          } else {
+              } else {
             initMap();
           }
         </script>

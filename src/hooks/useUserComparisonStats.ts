@@ -5,8 +5,22 @@ import { isLoggedIn } from '../utils/authUtils';
 export interface UserComparisonStatsData {
   registrationDate: string;
   practiceDays: number;
+  
+  // 탄소절감 평균 대비
+  monthlyCarbonComparison: number;
+  totalCarbonComparison: number;
+  
+  // 원큐씨앗 평균 대비
+  monthlyPointsComparison: number;
+  totalPointsComparison: number;
+  
+  // 증감률 (null이면 지난달 데이터 없음)
+  monthlyGrowthRate: number | null; // 탄소절감
+  ecoSeedsGrowthRate: number | null; // 원큐씨앗
+  
+  // 기존 호환성을 위한 필드 (deprecated)
   averageComparison: number;
-  monthlyGrowthRate: number;
+  
   comparisonDescription: string;
   userRanking: number;
   totalUsers: number;
@@ -40,8 +54,13 @@ export const useUserComparisonStats = () => {
       setUserStats({
         registrationDate: '2024-01-15',
         practiceDays: 300,
-        averageComparison: 25.0,
-        monthlyGrowthRate: 12.0,
+        monthlyCarbonComparison: 25.0,
+        totalCarbonComparison: 30.0,
+        monthlyPointsComparison: 20.0,
+        totalPointsComparison: 25.0,
+        monthlyGrowthRate: null, // 지난달 데이터가 없을 수 있음
+        ecoSeedsGrowthRate: null, // 지난달 데이터가 없을 수 있음
+        averageComparison: 25.0, // 기존 호환성
         comparisonDescription: '상위 30% 사용자',
         userRanking: 30,
         totalUsers: 1000

@@ -343,11 +343,11 @@ export default function MyTeamsScreen({ onBack, onHome, onShowEcoChallenge }: My
           <TouchableOpacity
             style={styles.rankingButton}
             onPress={() => {
-              console.log('🏆 팀 랭킹 버튼 클릭됨 (팀 없음)');
+              console.log('팀 랭킹 버튼 클릭됨 (팀 없음)');
               setShowRankingScreen(true);
             }}
           >
-            <Ionicons name="trophy" size={24} color="#008986" />
+            <Ionicons name="trophy" size={24} color="#FFFFFF" />
             <Text style={styles.rankingButtonText}>팀 랭킹 보기</Text>
           </TouchableOpacity>
         </View>
@@ -755,14 +755,12 @@ const styles = StyleSheet.create({
     marginLeft: 8 * SCALE
   },
   rankingButton: { 
-    backgroundColor: '#FFFFFF', 
+    backgroundColor: '#FFBC46', 
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 32 * SCALE, 
     paddingVertical: 16 * SCALE, 
     borderRadius: 12 * SCALE,
-    borderWidth: 2,
-    borderColor: '#008986',
     marginTop: 12 * SCALE,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -771,7 +769,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   rankingButtonText: { 
-    color: '#008986', 
+    color: '#FFFFFF', 
     fontSize: 16 * SCALE, 
     fontWeight: '600',
     marginLeft: 8 * SCALE

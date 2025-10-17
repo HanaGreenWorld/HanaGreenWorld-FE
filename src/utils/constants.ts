@@ -231,26 +231,30 @@ export const isKakaoMapApiKeyValid = (): boolean => {
 
 // API 설정 - 환경변수 우선, fallback으로 배포된 서버 사용
 export const API_BASE_URL = (() => {
-  // 1순위: 환경변수에서 API URL 가져오기
-  const envApiUrl = process.env.API_BASE_URL;
-  if (envApiUrl && envApiUrl !== 'undefined') {
-    return envApiUrl;
-  }
-
-  // 2순위: 개발 환경에서 플랫폼별 로컬 서버
+  // 1순위: 개발 환경에서 플랫폼별 로컬 서버 (환경변수 무시)
   if (__DEV__) {
     if (Platform.OS === 'android') {
       // 안드로이드 에뮬레이터는 10.0.2.2를 사용
+      console.log('🤖 Android 플랫폼 감지 - 10.0.2.2:8080 사용 (환경변수 무시)');
       return 'http://10.0.2.2:8080';
     }
     
     if (Platform.OS === 'ios') {
       // iOS 시뮬레이터는 localhost 사용
+      console.log('🍎 iOS 플랫폼 감지 - localhost:8080 사용');
       return 'http://localhost:8080';
     }
     
     // 웹 개발 환경
+    console.log('🌐 웹 플랫폼 감지 - localhost:8080 사용');
     return 'http://localhost:8080';
+  }
+
+  // 2순위: 환경변수에서 API URL 가져오기 (프로덕션에서만)
+  const envApiUrl = process.env.API_BASE_URL;
+  if (envApiUrl && envApiUrl !== 'undefined') {
+    console.log('🌐 환경변수에서 API URL 사용:', envApiUrl);
+    return envApiUrl;
   }
 
   // 3순위: 프로덕션 환경 - 배포된 서버 사용
@@ -260,7 +264,11 @@ export const API_BASE_URL = (() => {
 // 개발 중 확인용 로그
 if (__DEV__) {
   // eslint-disable-next-line no-console
-  console.log('API_BASE_URL =', API_BASE_URL);
+  console.log('🔧 API 설정 디버깅:');
+  console.log('  - __DEV__:', __DEV__);
+  console.log('  - Platform.OS:', Platform.OS);
+  console.log('  - process.env.API_BASE_URL:', process.env.API_BASE_URL);
+  console.log('  - 최종 API_BASE_URL:', API_BASE_URL);
 }
 
 // 카드 이미지 매핑 함수

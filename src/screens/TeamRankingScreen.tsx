@@ -60,21 +60,23 @@ export default function TeamRankingScreen({ onBack }: TeamRankingScreenProps) {
     });
     
     return (
-      <View key={team.teamId} style={[
-        styles.teamCard, 
-        isTopThree && styles.topThreeCard
-      ]}>
+      <View key={team.teamId} style={styles.teamCard}>
         <View style={styles.rankSection}>
-          <Image 
-            source={
-              rank === 1 ? require('../../assets/hana3dIcon/hanaIcon3d_51.png') :
-              rank === 2 ? require('../../assets/silver.png') :
-              rank === 3 ? require('../../assets/bronze.png') :
-              require('../../assets/hana3dIcon/hanaIcon3d_51.png')
-            } 
-            style={styles.rankIcon}
-            resizeMode="contain"
-          />
+          {isTopThree ? (
+            <Image 
+              source={
+                rank === 1 ? require('../../assets/hana3dIcon/hanaIcon3d_51.png') :
+                rank === 2 ? require('../../assets/silver.png') :
+                require('../../assets/bronze.png')
+              } 
+              style={styles.rankIcon}
+              resizeMode="contain"
+            />
+          ) : (
+            <View style={styles.rankNumberContainer}>
+              <Text style={styles.rankNumber}>{rank}</Text>
+            </View>
+          )}
         </View>
         <View style={styles.teamInfo}>
           <View style={styles.teamStats}>
@@ -361,23 +363,10 @@ const styles = StyleSheet.create({
     gap: 12 * SCALE,
   },
   teamCard: {
-    backgroundColor: '#F9FAFB',
     borderRadius: 12 * SCALE,
-    padding: 16 * SCALE,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    marginBottom: 8 * SCALE,
+    padding: 8 * SCALE,
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  topThreeCard: {
-    borderColor: '#FCD34D',
-    borderWidth: 2,
-    shadowColor: '#FCD34D',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
   },
   lastTeamCard: {
     marginBottom: 0,
@@ -389,6 +378,23 @@ const styles = StyleSheet.create({
   rankIcon: {
     width: 50 * SCALE,
     height: 50 * SCALE,
+  },
+  rankNumberContainer: {
+    width: 40 * SCALE,
+    height: 40 * SCALE,
+    borderRadius: 25 * SCALE,
+    backgroundColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#9CA3AF',
+    marginLeft: 4 * SCALE,
+    marginRight: 8 * SCALE,
+  },
+  rankNumber: {
+    fontSize: 20 * SCALE,
+    fontWeight: '700',
+    color: '#6B7280',
   },
   rewardText: {
     fontSize: 12 * SCALE,

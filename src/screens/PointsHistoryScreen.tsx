@@ -21,6 +21,26 @@ export default function PointsHistoryScreen({ onBack, onNavigateToSeedConversion
   const [showPeriodModal, setShowPeriodModal] = useState(false);
   const [showSortModal, setShowSortModal] = useState(false);
 
+  // 카테고리별 이미지 매핑 함수
+  const getCategoryImage = (imagePath: string) => {
+    if (!imagePath) {
+      return require('../../assets/hana3dIcon/hanaIcon3d_123.png');
+    }
+    
+    // 백엔드에서 받은 상대 경로를 로컬 이미지로 매핑
+    const imageMap: { [key: string]: any } = {
+      '/assets/hana3dIcon/hanaIcon3d_3_103.png': require('../../assets/hana3dIcon/hanaIcon3d_3_103.png'), // 일일 퀴즈
+      '/assets/hana3dIcon/hanaIcon3d_123.png': require('../../assets/hana3dIcon/hanaIcon3d_123.png'), // 걷기
+      '/assets/hana3dIcon/hanaIcon3d_4_13.png': require('../../assets/hana3dIcon/hanaIcon3d_4_13.png'), // 전자확인증
+      '/assets/hana3dIcon/hanaIcon3d_103.png': require('../../assets/hana3dIcon/hanaIcon3d_103.png'), // 에코 챌린지
+      '/assets/hana3dIcon/hanaIcon3d_85.png': require('../../assets/hana3dIcon/hanaIcon3d_85.png'), // 친환경 가맹점
+      '/assets/hana3dIcon/hanaIcon3d_3_15.png': require('../../assets/hana3dIcon/hanaIcon3d_3_15.png'), // 하나머니 전환
+      '/assets/sprout.png': require('../../assets/sprout.png'), // 환경 기부
+    };
+    
+    return imageMap[imagePath] || require('../../assets/hana3dIcon/hanaIcon3d_123.png');
+  };
+
   // 거래 내역 조회 - API에서 데이터 가져오기
   const fetchTransactions = async () => {
     try {
@@ -36,7 +56,7 @@ export default function PointsHistoryScreen({ onBack, onNavigateToSeedConversion
         category: tx.categoryDisplayName, // 백엔드에서 받은 한글 카테고리명 사용
         points: tx.transactionType === 'EARN' ? tx.pointsAmount : -tx.pointsAmount,
         type: tx.transactionType === 'EARN' ? 'earn' : 'use',
-        image: tx.categoryImageUrl ? { uri: tx.categoryImageUrl } : require('../../assets/hana3dIcon/hanaIcon3d_123.png'), // 백엔드에서 받은 이미지 URL 사용
+        image: getCategoryImage(tx.categoryImageUrl), // 카테고리별 이미지 매핑
         timestamp: new Date(tx.occurredAt).getTime(),
         balanceAfter: tx.balanceAfter, // 잔액 정보 추가
       }));

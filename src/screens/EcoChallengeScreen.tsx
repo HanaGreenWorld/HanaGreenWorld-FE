@@ -785,8 +785,8 @@ export default function EcoChallengeScreen({ onBack, onShowHistory, onShowSeedHi
                   });
                   
                   Alert.alert(
-                    '챌린지 완료!',
-                    `챌린지가 성공적으로 완료되었습니다!\n${latestParticipation.pointsAwarded ? `${latestParticipation.pointsAwarded}개의 씨앗을 받았습니다!` : ''}`,
+                    '챌린지 완료',
+                    `챌린지가 성공적으로 완료되었습니다.\n${latestParticipation.pointsAwarded ? `${latestParticipation.pointsAwarded}개의 씨앗을 받았습니다!` : ''}`,
                     [{ text: '확인', style: 'default' }]
                   );
                 } else if (latestParticipation.verificationStatus === 'REJECTED') {
@@ -1230,7 +1230,7 @@ export default function EcoChallengeScreen({ onBack, onShowHistory, onShowSeedHi
                   onImageSelected={handleImageSelection}
                   selectedImage={selected ? (capturedImages[selected.id.toString()] || pendingImages[selected.id.toString()]) : undefined}
                   title={uploadingImages[selected.id.toString()] ? "이미지 업로드 중..." : "인증 사진을 업로드해주세요"}
-                  subtitle={uploadingImages[selected.id.toString()] ? "서버에 저장하고 있습니다 ⏳" : "카메라로 촬영하거나 갤러리에서 선택하세요"}
+                  subtitle={uploadingImages[selected.id.toString()] ? "서버에 저장하고 있습니다" : "카메라로 촬영하거나 갤러리에서 선택하세요"}
                 />
                 ) : (
                   <View style={styles.completedImageContainer}>
