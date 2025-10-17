@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable, Image, ScrollView, TextInput, Alert 
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { SCALE, COLORS, IPHONE_WIDTH, KAKAO_MAP_API_KEY } from '../utils/constants';
-import { EcoMerchant, CATEGORY_EMOJIS } from '../types/merchant';
+import { EcoMerchant, MERCHANT_CATEGORIES } from '../types/merchant';
 import { searchNearbyMerchants, searchMerchantsByCategory, searchMerchantsByName } from '../utils/merchantApi';
 import { KakaoMap } from '../components/KakaoMap';
 import TopBar from '../components/TopBar';
@@ -179,13 +179,6 @@ export function EcoMerchantsScreen({ onBack }: EcoMerchantsScreenProps) {
     }
   }, [search]);
 
-  const categoryMeta: Record<string, { label: string; emoji: string }> = {
-    ECO_FOOD: { label: '친환경 식품/매장', emoji: '🥗' },
-    EV_CHARGING: { label: '전기차 충전', emoji: '⚡️' },
-    RECYCLING_STORE: { label: '제로웨이스트/리사이클', emoji: '♻️' },
-    GREEN_BEAUTY: { label: '친환경 뷰티', emoji: '🌿' },
-    ECO_SHOPPING: { label: '친환경 쇼핑', emoji: '🛍️' },
-    ORGANIC_CAFE: { label: '유기농 카페', emoji: '☕' }  };
 
   const haversine = (a: LatLng, b: LatLng) => {
     const R = 6371; // km
@@ -290,7 +283,7 @@ export function EcoMerchantsScreen({ onBack }: EcoMerchantsScreenProps) {
             ))}
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 * SCALE }}>
-            {Object.keys(categoryMeta).map((c) => (
+            {Object.keys(MERCHANT_CATEGORIES).map((c) => (
               <Pressable
                 key={c}
                 style={[styles.catChip, selectedCategories.includes(c) && styles.catChipActive]}
@@ -300,9 +293,16 @@ export function EcoMerchantsScreen({ onBack }: EcoMerchantsScreenProps) {
                   )
                 }
               >
-                <Text style={[styles.catChipText, selectedCategories.includes(c) && styles.catChipTextActive]}>
-                  {categoryMeta[c].emoji} {categoryMeta[c].label}
-                </Text>
+                <View style={styles.catChipContent}>
+                  <Image 
+                    source={MERCHANT_CATEGORIES[c].imageUrl} 
+                    style={styles.catChipIcon}
+                    resizeMode="contain"
+                  />
+                  <Text style={[styles.catChipText, selectedCategories.includes(c) && styles.catChipTextActive]}>
+                    {MERCHANT_CATEGORIES[c].displayName}
+                  </Text>
+                </View>
               </Pressable>
             ))}
           </ScrollView>
@@ -323,13 +323,15 @@ export function EcoMerchantsScreen({ onBack }: EcoMerchantsScreenProps) {
             <View key={m.id} style={styles.merchantItem}>
               <View style={styles.merchantLeft}>
                 <View style={styles.merchantIconWrap}>
-                  <Text style={{ fontSize: 16 * SCALE }}>
-                    {categoryMeta[m.category].emoji}
-                  </Text>
+                  <Image 
+                    source={MERCHANT_CATEGORIES[m.category].imageUrl} 
+                    style={styles.merchantIcon}
+                    resizeMode="contain"
+                  />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.merchantName}>{m.name}</Text>
-                  <Text style={styles.merchantType}>{categoryMeta[m.category].label}</Text>
+                  <Text style={styles.merchantType}>{MERCHANT_CATEGORIES[m.category].displayName}</Text>
                 </View>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
@@ -387,14 +389,16 @@ const styles = StyleSheet.create({
   sortChipTextActive: { color: COLORS.primary, fontWeight: '700' },
   catChip: { backgroundColor: 'white', paddingHorizontal: 10 * SCALE, paddingVertical: 6 * SCALE, borderRadius: 999, borderWidth: 1, borderColor: '#E5E7EB', marginRight: 8 * SCALE },
   catChipActive: { backgroundColor: 'rgba(19,128,114,0.12)', borderColor: COLORS.primary },
+  catChipContent: { flexDirection: 'row', alignItems: 'center', gap: 6 * SCALE },
+  catChipIcon: { width: 16 * SCALE, height: 16 * SCALE },
   catChipText: { fontSize: 12 * SCALE, color: '#374151' },
   catChipTextActive: { color: COLORS.primary, fontWeight: '700' },
 
   listWrap: { marginTop: 12 * SCALE, marginHorizontal: 20 * SCALE, gap: 8 * SCALE, marginBottom: 24 * SCALE },
   merchantItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'white', borderRadius: 12 * SCALE, padding: 12 * SCALE, borderWidth: 1, borderColor: '#E5E7EB' },
   merchantLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 * SCALE, flex: 1 },
-  merchantIconWrap: { width: 40 * SCALE, height: 40 * SCALE, borderRadius: 20 * SCALE, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
-  merchantIcon: { width: 24 * SCALE, height: 24 * SCALE },
+  merchantIconWrap: { width: 40 * SCALE, height: 40 * SCALE, borderRadius: 20 * SCALE, alignItems: 'center', justifyContent: 'center' },
+  merchantIcon: { width: 36 * SCALE, height: 36 * SCALE },
   merchantName: { fontSize: 14 * SCALE, fontWeight: '700', color: '#111827' },
   merchantType: { fontSize: 12 * SCALE, color: '#6B7280', marginTop: 2 * SCALE },
   distanceText: { fontSize: 12 * SCALE, fontWeight: '700', color: COLORS.primary, marginBottom: 6 * SCALE, textAlign: 'right' },

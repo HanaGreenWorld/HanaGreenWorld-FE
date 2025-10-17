@@ -196,8 +196,8 @@ export const KakaoMap: React.FC<KakaoMapProps> = ({
     `;
   };
 
-  // 매우 간단한 카카오지도 HTML 생성 함수
-  const generateSimpleMapHTML = () => {
+  // 카카오지도 HTML 생성 함수
+  const generateMapHTML = () => {
     return `
       <!DOCTYPE html>
       <html>
@@ -214,7 +214,6 @@ export const KakaoMap: React.FC<KakaoMapProps> = ({
           #map { 
             width: 100%; 
             height: 220px; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             position: relative;
             display: flex;
             align-items: center;
@@ -276,6 +275,48 @@ export const KakaoMap: React.FC<KakaoMapProps> = ({
                   var map = new kakao.maps.Map(mapContainer, mapOption);
                   sendLog('✅ 카카오맵 초기화 성공');
                   
+                  // 가맹점 데이터
+                  var merchantsData = ${JSON.stringify(merchants.map((merchant, index) => ({
+                    id: merchant.id || index,
+                    lat: merchant.latitude,
+                    lng: merchant.longitude,
+                    title: merchant.name,
+                    category: merchant.category,
+                    distance: merchant.distance,
+                  })))};
+                  
+                  sendLog('가맹점 데이터: ' + merchantsData.length + '개');
+                  
+                  // 가맹점 마커들 생성
+                  merchantsData.forEach(function(merchant, index) {
+                    var marker = new kakao.maps.Marker({
+                      position: new kakao.maps.LatLng(merchant.lat, merchant.lng),
+                      map: map,
+                      title: merchant.title
+                    });
+                    
+                    // 인포윈도우
+                    var infowindow = new kakao.maps.InfoWindow({
+                      content: '<div style="padding:10px;min-width:200px;">' +
+                               '<h3 style="margin:0 0 5px 0;font-size:14px;">' + merchant.title + '</h3>' +
+                               '<p style="margin:0;font-size:12px;color:#666;">' + merchant.category + '</p>' +
+                               '<p style="margin:5px 0 0 0;font-size:12px;color:#4CAF50;">' + 
+                               (merchant.distance ? merchant.distance.toFixed(3) + 'km' : '거리 계산 중') + '</p>' +
+                               '</div>'
+                    });
+                    
+                    // 마커 클릭 이벤트
+                    kakao.maps.event.addListener(marker, 'click', function() {
+                      infowindow.open(map, marker);
+                      if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+                        window.ReactNativeWebView.postMessage(JSON.stringify({
+                          type: 'markerClick',
+                          merchant: merchant
+                        }));
+                      }
+                    });
+                  });
+                  
                   // 플레이스홀더 숨기기
                   var placeholder = document.getElementById('mapPlaceholder');
                   if (placeholder) {
@@ -297,498 +338,6 @@ export const KakaoMap: React.FC<KakaoMapProps> = ({
             document.addEventListener('DOMContentLoaded', initMap);
           } else {
             initMap();
-          }
-        </script>
-      </body>
-      </html>
-    `;
-  };
-
-  const generateMapHTML = () => {
-    const markersData = merchants.map((merchant, index) => ({
-      id: merchant.id || index,
-      lat: merchant.latitude,
-      lng: merchant.longitude,
-      title: merchant.name,
-      category: merchant.category,
-      distance: merchant.distance,
-    }));
-
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>카카오맵</title>
-        <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_MAP_API_KEY}&autoload=false"></script>
-        <style>
-          body { 
-            margin: 0; 
-            padding: 0; 
-          }
-          #map { 
-            width: 100%; 
-            height: 220px; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-family: Arial, sans-serif;
-          }
-          .map-placeholder {
-            text-align: center;
-            padding: 20px;
-          }
-          .map-placeholder h3 {
-            margin: 0 0 10px 0;
-            font-size: 18px;
-          }
-          .map-placeholder p {
-            margin: 5px 0;
-            font-size: 14px;
-            opacity: 0.9;
-          }
-          .error-message {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            text-align: center;
-            z-index: 1000;
-          }
-          .map-controls {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-          }
-          .control-btn {
-            width: 32px;
-            height: 32px;
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            color: #333;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-          }
-          .control-btn:hover {
-            background: #f5f5f5;
-          }
-          .location-btn {
-            width: 36px;
-            height: 36px;
-            background: #4CAF50;
-            color: white;
-            margin-top: 5px;
-          }
-        </style>
-      </head>
-      <body>
-        <div id="map">
-        </div>
-        <div class="map-controls">
-          <div class="control-btn" onclick="zoomIn()">+</div>
-          <div class="control-btn" onclick="zoomOut()">-</div>
-        </div>
-        <div id="error" class="error-message" style="display:none;">
-          <h3>카카오맵 로드 실패</h3>
-          <p>API 키 또는 도메인 설정을 확인해주세요.</p>
-        </div>
-        
-        <script>
-          // console.log를 React Native로 전달하는 함수
-          function sendLog(message) {
-            console.log(message);
-            if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-              window.ReactNativeWebView.postMessage(JSON.stringify({
-                type: 'log',
-                message: message
-              }));
-            }
-          }
-          
-          sendLog('🗺️ 카카오맵 스크립트 시작');
-          sendLog('🔑 API 키: ' + '${KAKAO_MAP_API_KEY}');
-          sendLog('🌐 현재 도메인: ' + window.location.hostname);
-          sendLog('📍 현재 URL: ' + window.location.href);
-          sendLog('📱 User Agent: ' + navigator.userAgent);
-          sendLog('🔍 프로토콜: ' + window.location.protocol);
-          sendLog('🔍 포트: ' + window.location.port);
-          sendLog('🔍 전체 호스트: ' + window.location.host);
-          sendLog('🔍 origin: ' + window.location.origin);
-          sendLog('🔍 pathname: ' + window.location.pathname);
-          
-          // React Native로 도메인 정보 전송
-          if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-            window.ReactNativeWebView.postMessage(JSON.stringify({
-              type: 'domainInfo',
-              domain: window.location.hostname,
-              url: window.location.href,
-              origin: window.location.origin,
-              protocol: window.location.protocol,
-              port: window.location.port,
-              host: window.location.host
-            }));
-          }
-          
-          // API 키 검증
-          if (!'${KAKAO_MAP_API_KEY}' || '${KAKAO_MAP_API_KEY}' === 'undefined') {
-            sendLog('❌ API 키가 설정되지 않았습니다!');
-            document.getElementById('error').style.display = 'block';
-            document.getElementById('error').innerHTML = 
-              '<h3>❌ API 키 오류</h3>' +
-              '<p>카카오지도 API 키가 설정되지 않았습니다.</p>' +
-              '<p>개발자에게 문의하세요.</p>';
-            return;
-          }
-          
-          sendLog('✅ API 키 검증 통과: ' + '${KAKAO_MAP_API_KEY}');
-          
-          // 에러 핸들러
-          window.onerror = function(msg, url, line) {
-            console.error('JavaScript 에러:', msg, url, line);
-            document.getElementById('error').style.display = 'block';
-            document.getElementById('error').innerHTML = 
-              '<h3>🗺️ 지도 로드 실패</h3>' +
-              '<p>' + msg + '</p>' +
-              '<p>URL: ' + url + '</p>' +
-              '<p>Line: ' + line + '</p>' +
-              '<button onclick="location.reload()" style="background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">🔄 다시 시도</button>';
-            
-            if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-              window.ReactNativeWebView.postMessage(JSON.stringify({
-                type: 'error',
-                message: msg + ' (Line: ' + line + ', URL: ' + url + ')'
-              }));
-            }
-          };
-          
-          // Promise 에러 핸들러
-          window.addEventListener('unhandledrejection', function(event) {
-            console.error('Promise 에러:', event.reason);
-            if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-              window.ReactNativeWebView.postMessage(JSON.stringify({
-                type: 'error',
-                message: 'Promise 에러: ' + event.reason
-              }));
-            }
-          });
-          
-          // 카카오맵 초기화 (autoload=false로 설정됨)
-          function initKakaoMap() {
-            sendLog('🗺️ 카카오맵 초기화 시작');
-            
-            // kakao 객체가 로드될 때까지 대기
-            function waitForKakao() {
-              sendLog('🔍 kakao 객체 확인 중... ' + typeof kakao);
-              if (typeof kakao !== 'undefined') {
-                sendLog('✅ 카카오 SDK 로드 완료');
-                sendLog('🔍 kakao.maps 확인 중... ' + typeof kakao.maps);
-                
-                // autoload=false이므로 수동으로 로드
-                kakao.maps.load(function() {
-                  sendLog('✅ 카카오맵 라이브러리 로드 완료');
-                  sendLog('🔍 kakao.maps.Map 확인 중... ' + typeof kakao.maps.Map);
-                  sendLog('🔍 kakao.maps.LatLng 확인 중... ' + typeof kakao.maps.LatLng);
-                  initializeMap();
-                });
-              } else {
-                sendLog('⏳ 카카오 SDK 로드 대기 중... (시도 횟수: ' + (waitForKakao.attempts || 0) + ')');
-                waitForKakao.attempts = (waitForKakao.attempts || 0) + 1;
-                
-                // 최대 50번 시도 (5초)
-                if (waitForKakao.attempts < 50) {
-                  setTimeout(waitForKakao, 100);
-                } else {
-                  sendLog('❌ 카카오 SDK 로드 실패 - 타임아웃');
-                  sendLog('🔍 window 객체 확인: ' + typeof window);
-                  sendLog('🔍 document 객체 확인: ' + typeof document);
-                  sendLog('🔍 kakao 객체 상태: ' + typeof kakao);
-                  sendLog('🔍 현재 도메인: ' + window.location.hostname);
-                  sendLog('🔍 현재 URL: ' + window.location.href);
-                  
-                  // 도메인 설정 문제일 가능성이 높으므로 안내 메시지 표시
-                  document.getElementById('error').style.display = 'block';
-                  document.getElementById('error').innerHTML = 
-                    '<h3>❌ 카카오 SDK 로드 실패</h3>' +
-                    '<p>카카오지도 SDK를 로드할 수 없습니다.</p>' +
-                    '<p><strong>가능한 원인:</strong></p>' +
-                    '<p>1. 도메인 설정 문제</p>' +
-                    '<p>2. 네트워크 연결 문제</p>' +
-                    '<p>3. API 키 권한 문제</p>' +
-                    '<p><strong>현재 도메인:</strong> ' + window.location.hostname + '</p>' +
-                    '<p><strong>현재 URL:</strong> ' + window.location.href + '</p>' +
-                    '<p><strong>해결 방법:</strong></p>' +
-                    '<p>카카오 개발자 콘솔에서 현재 도메인을 추가하세요.</p>' +
-                    '<button onclick="showFallbackMap()" style="background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">🗺️ 대체 지도 보기</button>';
-                }
-              }
-            }
-            
-            // 초기 대기 후 시작
-            setTimeout(waitForKakao, 100);
-          }
-          
-          // React Native에서 오는 메시지 리스너
-          document.addEventListener('message', function(event) {
-            console.log('📨 React Native에서 메시지 받음:', event.data);
-            try {
-              const data = JSON.parse(event.data);
-              if (data.type === 'test') {
-                console.log('✅ WebView 메시지 통신 테스트 성공:', data.message);
-                // React Native로 응답 전송
-                if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-                  window.ReactNativeWebView.postMessage(JSON.stringify({
-                    type: 'testResponse',
-                    message: 'WebView에서 React Native로 응답 전송 성공'
-                  }));
-                }
-              }
-            } catch (error) {
-              console.error('메시지 파싱 에러:', error);
-            }
-          });
-          
-          // 페이지 로드 완료 후 카카오맵 초기화
-          if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initKakaoMap);
-          } else {
-            initKakaoMap();
-          }
-          
-          
-          var map; // 전역 변수로 지도 선언
-          var currentLocationMarker; // 현재 위치 마커
-          
-          function initializeMap() {
-            try {
-              sendLog('🗺️ 지도 초기화 시작');
-              sendLog('📍 중심 좌표: ${center.lat}, ${center.lon}');
-              sendLog('🔍 kakao.maps.Map 생성자 확인: ' + typeof kakao.maps.Map);
-              sendLog('🔍 kakao.maps.LatLng 생성자 확인: ' + typeof kakao.maps.LatLng);
-              
-              // 카카오맵 초기화
-              var mapContainer = document.getElementById('map');
-              if (!mapContainer) {
-                throw new Error('지도 컨테이너를 찾을 수 없습니다');
-              }
-              sendLog('✅ 지도 컨테이너 찾음');
-              
-              var mapOption = {
-                center: new kakao.maps.LatLng(${center.lat}, ${center.lon}),
-                level: 7
-              };
-              
-              sendLog('🗺️ 지도 옵션 설정 완료');
-              sendLog('🗺️ 지도 생성 시도 중...');
-              map = new kakao.maps.Map(mapContainer, mapOption);
-              sendLog('✅ 카카오맵 초기화 성공');
-              sendLog('🔍 생성된 지도 객체: ' + (map ? '성공' : '실패'));
-              
-              // 플레이스홀더 숨기기
-              var placeholder = document.getElementById('mapPlaceholder');
-              if (placeholder) {
-                placeholder.style.display = 'none';
-              }
-              
-              // 현재 위치 마커
-              currentLocationMarker = new kakao.maps.Marker({
-                position: new kakao.maps.LatLng(${center.lat}, ${center.lon}),
-                map: map
-              });
-              
-              // 가맹점 데이터
-              var merchantsData = ${JSON.stringify(markersData)};
-              sendLog('가맹점 데이터: ' + merchantsData.length + '개');
-              
-              // 가맹점 마커들 생성
-              merchantsData.forEach(function(merchant, index) {
-                var marker = new kakao.maps.Marker({
-                  position: new kakao.maps.LatLng(merchant.lat, merchant.lng),
-                  map: map,
-                  title: merchant.title
-                });
-                
-                // 인포윈도우
-                var infowindow = new kakao.maps.InfoWindow({
-                  content: '<div style="padding:10px;min-width:200px;">' +
-                           '<h3 style="margin:0 0 5px 0;font-size:14px;">' + merchant.title + '</h3>' +
-                           '<p style="margin:0;font-size:12px;color:#666;">' + merchant.category + '</p>' +
-                           '<p style="margin:5px 0 0 0;font-size:12px;color:#4CAF50;">' + 
-                           (merchant.distance ? merchant.distance.toFixed(3) + 'km' : '거리 계산 중') + '</p>' +
-                           '</div>'
-                });
-                
-                // 마커 클릭 이벤트
-                kakao.maps.event.addListener(marker, 'click', function() {
-                  infowindow.open(map, marker);
-                  if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-                    window.ReactNativeWebView.postMessage(JSON.stringify({
-                      type: 'markerClick',
-                      merchant: merchant
-                    }));
-                  }
-                });
-              });
-              
-              // 지도 로드 완료 이벤트
-              kakao.maps.event.addListener(map, 'tilesloaded', function() {
-                sendLog('카카오맵 타일 로드 완료');
-                if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-                  window.ReactNativeWebView.postMessage(JSON.stringify({
-                    type: 'mapLoaded',
-                    center: { lat: ${center.lat}, lng: ${center.lon} }
-                  }));
-                }
-              });
-              
-              sendLog('카카오맵 설정 완료');
-              
-              // 에러 메시지 숨기기
-              document.getElementById('error').style.display = 'none';
-              
-            } catch (error) {
-              sendLog('❌ 카카오맵 초기화 에러: ' + error.message);
-              document.getElementById('error').style.display = 'block';
-              document.getElementById('error').innerHTML = '<h3>지도 초기화 실패</h3><p>' + error.message + '</p>';
-              if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-                window.ReactNativeWebView.postMessage(JSON.stringify({
-                  type: 'error',
-                  message: error.toString()
-                }));
-              }
-            }
-          }
-          
-          // 확대 기능
-          function zoomIn() {
-            if (map) {
-              var level = map.getLevel();
-              map.setLevel(level - 1);
-            }
-          }
-          
-          // 축소 기능
-          function zoomOut() {
-            if (map) {
-              var level = map.getLevel();
-              map.setLevel(level + 1);
-            }
-          }
-          
-          // 대체 지도 표시 함수
-          function showFallbackMap() {
-            sendLog('🗺️ 대체 지도 표시');
-            document.getElementById('error').style.display = 'none';
-            document.getElementById('mapPlaceholder').style.display = 'block';
-            document.getElementById('mapPlaceholder').innerHTML = 
-              '<h3>🗺️ 대체 지도</h3>' +
-              '<p>📍 현재 위치: ${center.lat}, ${center.lon}</p>' +
-              '<p>🏪 가맹점 수: ${merchants.length}개</p>' +
-              '<p>📍 서울시청 기준</p>' +
-              '<div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px;">' +
-              '<p style="margin: 5px 0;">🔍 카카오지도 로드 실패</p>' +
-              '<p style="margin: 5px 0;">📱 대체 UI로 표시 중</p>' +
-              '<p style="margin: 5px 0;">🌐 도메인: ' + window.location.hostname + '</p>' +
-              '</div>';
-              
-            // React Native로 대체 지도 표시 알림
-            if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-              window.ReactNativeWebView.postMessage(JSON.stringify({
-                type: 'fallbackMap',
-                message: '대체 지도 표시됨',
-                domain: window.location.hostname,
-                url: window.location.href
-              }));
-            }
-          }
-          
-            function goToCurrentLocation() {
-              if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                  function(position) {
-                    var lat = position.coords.latitude;
-                    var lng = position.coords.longitude;
-                    var moveLatLon = new kakao.maps.LatLng(lat, lng);
-
-                    // 지도 중심 이동
-                    if (map) {
-                      map.setCenter(moveLatLon);
-                    }
-
-                    // 현재 위치 마커 업데이트
-                    if (currentLocationMarker) {
-                      currentLocationMarker.setPosition(moveLatLon);
-                    }
-
-                    // React Native로 알림 (안전 체크)
-                    if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-                      window.ReactNativeWebView.postMessage(
-                        JSON.stringify({
-                          type: 'locationChanged',
-                          location: { lat: lat, lng: lng }
-                        })
-                      );
-                    }
-
-                    console.log('현재 위치로 이동:', lat, lng);
-                  },
-                  function(error) {
-                    console.error('위치 정보 가져오기 실패:', error);
-
-                    // React Native로 에러 알림 (안전 체크)
-                    if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-                      window.ReactNativeWebView.postMessage(
-                        JSON.stringify({
-                          type: 'locationError',
-                          error: error.message
-                        })
-                      );
-                    }
-
-                    // fallback: 기본 위치(서울 시청)로 이동
-                    var fallbackLatLon = new kakao.maps.LatLng(37.5665, 126.9780);
-                    if (map) {
-                      map.setCenter(fallbackLatLon);
-                    }
-                    if (currentLocationMarker) {
-                      currentLocationMarker.setPosition(fallbackLatLon);
-                    }
-                  },
-                  {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 60000
-                  }
-                );
-              } else {
-                // 위치 서비스 지원 안 함
-                if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-                  window.ReactNativeWebView.postMessage(
-                    JSON.stringify({
-                      type: 'locationError',
-                      error: '이 브라우저에서는 위치 서비스를 지원하지 않습니다.'
-                    })
-                  );
-                }
-              }
-            }
           }
         </script>
       </body>
@@ -888,8 +437,7 @@ export const KakaoMap: React.FC<KakaoMapProps> = ({
       <WebView
         ref={webViewRef}
         source={{
-          html: generateSimpleMapHTML(),
-          baseUrl: 'https://localhost',
+          html: generateMapHTML(),
         }}
         style={styles.webview}
         onMessage={handleWebViewMessage}
