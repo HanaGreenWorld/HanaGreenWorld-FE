@@ -82,7 +82,19 @@ export const challengeApi = {
   // 활성화된 챌린지 목록 조회
   getActiveChallenges: async (): Promise<Challenge[]> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/challenges`);
+      const token = await getAuthToken();
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/challenges`, {
+        headers,
+      });
+      
       if (!response.ok) {
         throw new Error('Failed to fetch challenges');
       }
@@ -97,7 +109,19 @@ export const challengeApi = {
   // 챌린지 상세 정보 조회
   getChallengeDetail: async (challengeId: number): Promise<ChallengeDetail | null> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/challenges/${challengeId}`);
+      const token = await getAuthToken();
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/challenges/${challengeId}`, {
+        headers,
+      });
+      
       if (!response.ok) {
         throw new Error('Failed to fetch challenge detail');
       }

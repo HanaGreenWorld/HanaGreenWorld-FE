@@ -1,6 +1,7 @@
 import { EcoMerchant, LocationSearchRequest } from '../types/merchant';
 
 import { API_BASE_URL } from './constants';
+import { getAuthToken } from './authUtils';
 
 const MERCHANT_API_URL = `${API_BASE_URL}/merchants/location`;
 
@@ -10,11 +11,18 @@ export const searchNearbyMerchants = async (request: LocationSearchRequest): Pro
     console.log('API 요청 데이터:', request);
     console.log('API URL:', `${MERCHANT_API_URL}/nearby`);
     
+    const token = await getAuthToken();
+    const headers: any = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
     const response = await fetch(`${MERCHANT_API_URL}/nearby`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(request),
     });
 
@@ -38,11 +46,18 @@ export const searchNearbyMerchants = async (request: LocationSearchRequest): Pro
 // 카테고리별 가맹점 검색
 export const searchMerchantsByCategory = async (category: string): Promise<EcoMerchant[]> => {
   try {
+    const token = await getAuthToken();
+    const headers: any = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
     const response = await fetch(`${MERCHANT_API_URL}/category/${category}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -59,11 +74,18 @@ export const searchMerchantsByCategory = async (category: string): Promise<EcoMe
 // 검증된 가맹점만 조회
 export const getVerifiedMerchants = async (): Promise<EcoMerchant[]> => {
   try {
+    const token = await getAuthToken();
+    const headers: any = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
     const response = await fetch(`${MERCHANT_API_URL}/verified`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -80,11 +102,18 @@ export const getVerifiedMerchants = async (): Promise<EcoMerchant[]> => {
 // 가맹점명으로 검색
 export const searchMerchantsByName = async (keyword: string): Promise<EcoMerchant[]> => {
   try {
+    const token = await getAuthToken();
+    const headers: any = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
     const response = await fetch(`${MERCHANT_API_URL}/search?keyword=${encodeURIComponent(keyword)}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -101,11 +130,18 @@ export const searchMerchantsByName = async (keyword: string): Promise<EcoMerchan
 // 모든 활성 가맹점 조회
 export const getAllActiveMerchants = async (): Promise<EcoMerchant[]> => {
   try {
+    const token = await getAuthToken();
+    const headers: any = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
     const response = await fetch(`${MERCHANT_API_URL}/all`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -122,11 +158,18 @@ export const getAllActiveMerchants = async (): Promise<EcoMerchant[]> => {
 // 카테고리 목록 조회
 export const getMerchantCategories = async (): Promise<string[]> => {
   try {
+    const token = await getAuthToken();
+    const headers: any = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
     const response = await fetch(`${MERCHANT_API_URL}/categories`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
     });
 
     if (!response.ok) {
